@@ -127,7 +127,7 @@ const Profile = () => {
               <div className="relative">
                                  {profileUser.profileImageUrl || profileUser.profileImage ? (
                    <img
-                     src={profileUser.profileImageUrl || `http://localhost:5000${profileUser.profileImage}`}
+                     src={profileUser.profileImageUrl || `http://localhost:5000/uploads/${profileUser.profileImage}`}
                      alt={`${profileUser.firstName} ${profileUser.lastName}`}
                      className="w-32 h-32 rounded-full object-cover border-4 border-background shadow-lg"
                      onError={(e) => {

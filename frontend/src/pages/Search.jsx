@@ -20,13 +20,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Search = () => {
+  const API_BASE_URL = 'http://localhost:5000/api';
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [artworks, setArtworks] = useState([]);
   const [users, setUsers] = useState([]);
+  const [suggestedArtworks, setSuggestedArtworks] = useState([]);
+  const [suggestedPage, setSuggestedPage] = useState(1);
+  const [hasMoreSuggested, setHasMoreSuggested] = useState(true);
   const [loading, setLoading] = useState(false);
   const [artworksLoading, setArtworksLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [suggestedLoading, setSuggestedLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('artworks');
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -37,6 +42,8 @@ const Search = () => {
       setQuery(searchQuery);
       handleSearch(searchQuery);
     }
+    // Always fetch suggested artworks
+    fetchSuggestedArtworks();
   }, [searchParams]);
 
   const handleSearch = async (searchQuery = query) => {
@@ -86,6 +93,35 @@ const Search = () => {
       console.error('User search error:', err);
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  const fetchSuggestedArtworks = async (page = 1, append = false) => {
+    try {
+      setSuggestedLoading(true);
+      const response = await fetch(`${API_BASE_URL}/artworks/feed?limit=12&page=${page}`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (append) {
+          setSuggestedArtworks(prev => [...prev, ...(data.artworks || [])]);
+        } else {
+          setSuggestedArtworks(data.artworks || []);
+        }
+        
+        setHasMoreSuggested(data.pagination?.hasNext || false);
+        setSuggestedPage(page);
+      }
+    } catch (error) {
+      console.error('Error fetching suggested artworks:', error);
+    } finally {
+      setSuggestedLoading(false);
+    }
+  };
+
+  const loadMoreSuggested = async () => {
+    if (hasMoreSuggested && !suggestedLoading) {
+      await fetchSuggestedArtworks(suggestedPage + 1, true);
     }
   };
 
@@ -177,25 +213,37 @@ const Search = () => {
                           {artwork.title}
                         </Link>
 
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                          <Avatar className="h-6 w-6">
-                            <img
-                              src={artwork.artist.profileImage 
-                                ? `http://localhost:5000${artwork.artist.profileImage}` 
-                                : '/default-avatar.png'
-                              }
-                              alt={artwork.artist.username}
-                            />
-                          </Avatar>
-                          <Link 
-                            to={`/profile/${artwork.artist._id}`}
-                            className="hover:underline"
-                          >
-                            {artwork.artist.username}
-                          </Link>
-                          <span>•</span>
-                          <span>{formatTimeAgo(artwork.createdAt)}</span>
-                        </div>
+                                                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                           <Avatar className="h-6 w-6">
+                             {artwork.artist?.profileImage ? (
+                               <img
+                                 src={`http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                                 alt={artwork.artist.username}
+                                 className="w-full h-full object-cover"
+                                 onError={(e) => {
+                                   console.log('Search results image failed to load:', e.target.src);
+                                   e.target.style.display = 'none';
+                                   e.target.nextSibling.style.display = 'flex';
+                                 }}
+                               />
+                             ) : (
+                               <div className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
+                                 {artwork.artist?.firstName && artwork.artist?.lastName
+                                   ? `${artwork.artist.firstName.charAt(0)}${artwork.artist.lastName.charAt(0)}`
+                                   : artwork.artist?.username?.substring(0, 2).toUpperCase() || 'U'
+                                 }
+                               </div>
+                             )}
+                           </Avatar>
+                           <Link 
+                             to={`/profile/${artwork.artist._id}`}
+                             className="hover:underline"
+                           >
+                             {artwork.artist.username}
+                           </Link>
+                           <span>•</span>
+                           <span>{formatTimeAgo(artwork.createdAt)}</span>
+                         </div>
 
                         {artwork.description && (
                           <p className="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -254,13 +302,20 @@ const Search = () => {
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4 mb-4">
                           <Avatar className="h-16 w-16">
-                            <img
-                              src={user.profileImage 
-                                ? `http://localhost:5000${user.profileImage}` 
-                                : '/default-avatar.png'
-                              }
-                              alt={user.username}
-                            />
+                                                         {user?.profileImage ? (
+                               <img
+                                 src={`http://localhost:5000/uploads/profiles/${user.profileImage}`}
+                                 alt={user.username}
+                                 className="w-full h-full object-cover"
+                               />
+                            ) : (
+                              <div className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                                {user?.firstName && user?.lastName
+                                  ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
+                                  : user?.username?.substring(0, 2).toUpperCase() || 'U'
+                                }
+                              </div>
+                            )}
                           </Avatar>
                           <div className="flex-1">
                             <Link 
@@ -334,6 +389,128 @@ const Search = () => {
               Discover amazing digital art and connect with talented artists
             </p>
           </div>
+        )}
+
+        {/* Suggested Artworks Section */}
+        {suggestedArtworks.length > 0 && (
+          <section className="mt-16">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Suggested Artworks</h2>
+              <p className="text-muted-foreground">
+                Discover more amazing artworks from our community
+              </p>
+            </div>
+            
+            {suggestedLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+                         ) : (
+               <>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                   {suggestedArtworks.map((artwork) => (
+                     <Card key={artwork._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                       <Link to={`/artwork/${artwork._id}`}>
+                         <div className="aspect-square relative">
+                           <img
+                             src={artwork.imageUrl || artwork.canvasData}
+                             alt={artwork.title}
+                             className="w-full h-full object-cover"
+                             onError={(e) => {
+                               e.target.style.display = 'none';
+                               e.target.nextSibling.style.display = 'flex';
+                             }}
+                           />
+                           <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center" style={{ display: artwork.imageUrl || artwork.canvasData ? 'none' : 'flex' }}>
+                             <Palette className="h-12 w-12 text-gray-400" />
+                           </div>
+                           <div className="absolute top-2 right-2">
+                             <Badge variant="secondary" className="bg-black/50 text-white">
+                               <Eye className="h-3 w-3 mr-1" />
+                               {artwork.views || 0}
+                             </Badge>
+                           </div>
+                         </div>
+                       </Link>
+                       
+                       <CardContent className="p-4">
+                         <Link 
+                           to={`/artwork/${artwork._id}`}
+                           className="font-medium hover:underline line-clamp-1 block mb-2"
+                         >
+                           {artwork.title}
+                         </Link>
+
+                         <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                           <Avatar className="h-6 w-6">
+                             {artwork.artist?.profileImage ? (
+                               <img
+                                 src={`http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                                 alt={artwork.artist?.username}
+                                 className="w-full h-full object-cover"
+                                 onError={(e) => {
+                                   console.log('Image failed to load:', e.target.src);
+                                   e.target.style.display = 'none';
+                                   e.target.nextSibling.style.display = 'flex';
+                                 }}
+                               />
+                             ) : (
+                               <div className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
+                                 {artwork.artist?.firstName && artwork.artist?.lastName
+                                   ? `${artwork.artist.firstName.charAt(0)}${artwork.artist.lastName.charAt(0)}`
+                                   : artwork.artist?.username?.substring(0, 2).toUpperCase() || 'U'
+                                 }
+                               </div>
+                             )}
+                           </Avatar>
+                           <Link 
+                             to={`/profile/${artwork.artist?._id}`}
+                             className="hover:underline"
+                           >
+                             {artwork.artist?.username}
+                           </Link>
+                         </div>
+
+                         <div className="flex items-center justify-between text-xs text-gray-500">
+                           <div className="flex items-center gap-3">
+                             <div className="flex items-center gap-1">
+                               <Heart className="h-3 w-3" />
+                               <span>{artwork.likesCount || 0}</span>
+                             </div>
+                             <div className="flex items-center gap-1">
+                               <MessageCircle className="h-3 w-3" />
+                               <span>{artwork.commentsCount || 0}</span>
+                             </div>
+                           </div>
+                           <span>{formatTimeAgo(artwork.createdAt)}</span>
+                         </div>
+                       </CardContent>
+                     </Card>
+                   ))}
+                 </div>
+                 
+                 {hasMoreSuggested && (
+                   <div className="text-center mt-8">
+                     <Button 
+                       onClick={loadMoreSuggested}
+                       disabled={suggestedLoading}
+                       variant="outline"
+                       className="px-8"
+                     >
+                       {suggestedLoading ? (
+                         <>
+                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                           Loading...
+                         </>
+                       ) : (
+                         'Load More Artworks'
+                       )}
+                     </Button>
+                   </div>
+                 )}
+               </>
+             )}
+          </section>
         )}
       </div>
 

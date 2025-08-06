@@ -353,7 +353,7 @@ const ArtworkDetails = () => {
                   <Avatar className="h-12 w-12">
                     <img
                       src={artwork.artist.profileImage 
-                        ? `http://localhost:5000${artwork.artist.profileImage}` 
+                        ? `http://localhost:5000/uploads/${artwork.artist.profileImage}` 
                         : '/default-avatar.png'
                       }
                       alt={artwork.artist.username}
@@ -426,7 +426,7 @@ const ArtworkDetails = () => {
                           <Avatar className="h-8 w-8">
                             <img
                               src={comment.author.profileImage 
-                                ? `http://localhost:5000${comment.author.profileImage}` 
+                                ? `http://localhost:5000/uploads/${comment.author.profileImage}` 
                                 : '/default-avatar.png'
                               }
                               alt={comment.author.username}

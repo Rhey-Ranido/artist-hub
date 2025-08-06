@@ -162,7 +162,7 @@ const UserProfile = () => {
               <Avatar className="h-32 w-32 mb-4">
                 <img
                   src={user.profileImage 
-                    ? `http://localhost:5000${user.profileImage}` 
+                    ? `http://localhost:5000/uploads/${user.profileImage}` 
                     : '/default-avatar.png'
                   }
                   alt={user.username}

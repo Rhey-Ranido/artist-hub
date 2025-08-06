@@ -296,7 +296,7 @@ const ProviderProfile = () => {
                     <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center">
                       {provider.profileImage ? (
                         <img 
-                          src={provider.profileImage} 
+                                                        src={`http://localhost:5000/uploads/${provider.profileImage}`} 
                           alt={provider.name}
                           className="w-24 h-24 rounded-full object-cover"
                         />

@@ -33,11 +33,10 @@ const Messages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [creatingConversation, setCreatingConversation] = useState(false);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
-  const [showProviderSearch, setShowProviderSearch] = useState(false);
-  const [providers, setProviders] = useState([]);
-  const [providerSearchTerm, setProviderSearchTerm] = useState('');
+
   const [socket, setSocket] = useState(null);
   const [typing, setTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
@@ -45,6 +44,7 @@ const Messages = () => {
   const [unreadCounts, setUnreadCounts] = useState({});
   const messagesEndRef = useRef(null);
   const [forceUpdate, setForceUpdate] = useState(0);
+  const processedUrlParams = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,12 +66,14 @@ const Messages = () => {
     console.log('📊 Latest message:', messages[messages.length - 1]?.content);
   }, [messages, forceUpdate]);
 
-  const API_BASE_URL = 'http://localhost:3000/api';
+  const API_BASE_URL = 'http://localhost:5000/api';
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
   const chatIdFromUrl = urlParams.get('chat');
   const providerIdFromUrl = urlParams.get('provider');
+  const userIdFromUrl = urlParams.get('user');
+  const usernameFromUrl = urlParams.get('username');
 
   useEffect(() => {
     // Check if user is authenticated
@@ -87,11 +89,20 @@ const Messages = () => {
     setCurrentUser(user);
     
     // Initialize socket connection
-    const socketInstance = io('http://localhost:3000');
+    const socketInstance = io('http://localhost:5000');
     setSocket(socketInstance);
     
     socketInstance.emit('setup', user);
     socketInstance.on('connected', () => {
+      console.log('✅ Socket connected');
+    });
+    
+    socketInstance.on('connect', () => {
+      console.log('✅ Socket connection established');
+    });
+    
+    socketInstance.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
     });
     
             socketInstance.on('message_received', (newMessage) => {
@@ -100,7 +111,11 @@ const Messages = () => {
           console.log('Message sender:', newMessage.sender._id, 'Current user:', currentUser?.id);
           console.log('Is own message:', newMessage.sender._id === currentUser?.id);
           
-          if (selectedChat && newMessage.chat._id === selectedChat._id) {
+          // Check if this is for the currently selected chat or if we're creating a new conversation
+          const isCurrentChat = selectedChat && newMessage.chat._id === selectedChat._id;
+          const isOwnMessage = newMessage.sender._id === currentUser?.id;
+          
+          if (isCurrentChat || (isOwnMessage && !selectedChat)) {
             console.log('✅ Adding message to current chat');
             
             // Use a more explicit state update to ensure re-render
@@ -174,7 +189,12 @@ const Messages = () => {
 
   // Effect to handle URL parameters after chats are loaded
   useEffect(() => {
-    if (chats.length > 0 && (chatIdFromUrl || providerIdFromUrl)) {
+    // Prevent multiple processing of URL parameters
+    if (processedUrlParams.current) {
+      return;
+    }
+    
+    if (chats.length > 0 && (chatIdFromUrl || providerIdFromUrl || userIdFromUrl)) {
       let targetChat = null;
       
       if (chatIdFromUrl) {
@@ -183,14 +203,27 @@ const Messages = () => {
         targetChat = chats.find(chat => 
           chat.users.some(user => user._id === providerIdFromUrl)
         );
+      } else if (userIdFromUrl) {
+        targetChat = chats.find(chat => 
+          chat.users.some(user => user._id === userIdFromUrl)
+        );
       }
       
       if (targetChat) {
         setSelectedChat(targetChat);
         fetchMessages(targetChat._id);
+        processedUrlParams.current = true;
+      } else if (userIdFromUrl) {
+        // Create new conversation with the user
+        startConversationWithUser(userIdFromUrl);
+        processedUrlParams.current = true;
       }
+    } else if (userIdFromUrl && chats.length === 0) {
+      // If no chats exist yet, create new conversation
+      startConversationWithUser(userIdFromUrl);
+      processedUrlParams.current = true;
     }
-  }, [chats, chatIdFromUrl, providerIdFromUrl]);
+  }, [chats, chatIdFromUrl, providerIdFromUrl, userIdFromUrl, usernameFromUrl]);
 
   // Effect to join chat room when selectedChat changes
   useEffect(() => {
@@ -308,17 +341,7 @@ const Messages = () => {
     }
   };
 
-  const fetchProviders = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/providers`);
-      if (response.ok) {
-        const data = await response.json();
-        setProviders(data.providers || []);
-      }
-    } catch (err) {
-      console.error('Error fetching providers:', err);
-    }
-  };
+
 
   const sendMessage = async () => {
     console.log('🚀 Sending message. selectedChat:', selectedChat?._id, 'newMessage:', newMessage);
@@ -333,6 +356,11 @@ const Messages = () => {
     }
     if (sending) {
       console.log('❌ Already sending');
+      return;
+    }
+    if (!socket?.connected) {
+      console.log('❌ Socket not connected');
+      setError('Connection lost. Please refresh the page.');
       return;
     }
 
@@ -356,8 +384,15 @@ const Messages = () => {
         console.log('📤 Message sent successfully:', newMsg.content);
         setNewMessage('');
         
-        // Don't add message locally - let socket event handle it
-        // This prevents duplicate messages when socket event is received
+        // Add message locally as fallback in case socket event doesn't arrive
+        setMessages(prevMessages => {
+          // Check if message already exists to prevent duplicates
+          const messageExists = prevMessages.some(msg => msg._id === newMsg._id);
+          if (messageExists) {
+            return prevMessages;
+          }
+          return [...prevMessages, newMsg];
+        });
         
         // Update chat list with latest message
         setChats(prev => prev.map(chat => 
@@ -442,8 +477,6 @@ const Messages = () => {
         const newChat = await response.json();
         setChats(prev => [newChat, ...prev]);
         setSelectedChat(newChat);
-        setShowProviderSearch(false);
-        setProviderSearchTerm('');
         
         // Clear URL parameters after successful chat creation
         if (serviceIdFromUrl || serviceTitleFromUrl) {
@@ -453,6 +486,57 @@ const Messages = () => {
     } catch (err) {
       console.error('Error starting conversation:', err);
       setError('Failed to start conversation');
+    }
+  };
+
+  const startConversationWithUser = async (userId) => {
+    // Prevent multiple calls
+    if (creatingConversation) {
+      return;
+    }
+    
+    try {
+      setCreatingConversation(true);
+      const token = localStorage.getItem('token');
+      
+      // Check if conversation already exists
+      const existingChat = chats.find(chat => 
+        chat.users.some(user => user._id === userId)
+      );
+      
+      if (existingChat) {
+        setSelectedChat(existingChat);
+        fetchMessages(existingChat._id);
+        navigate('/messages', { replace: true });
+        return;
+      }
+      
+      const requestBody = {
+        userId: userId
+      };
+
+      const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        const newChat = await response.json();
+        setChats(prev => [newChat, ...prev]);
+        setSelectedChat(newChat);
+        
+        // Clear URL parameters after successful chat creation
+        navigate('/messages', { replace: true });
+      }
+    } catch (err) {
+      console.error('Error starting conversation with user:', err);
+      setError('Failed to start conversation');
+    } finally {
+      setCreatingConversation(false);
     }
   };
 
@@ -497,13 +581,7 @@ const Messages = () => {
     );
   });
 
-  const filteredProviders = providers.filter(provider => {
-    const searchLower = providerSearchTerm.toLowerCase();
-    return (
-      provider.name?.toLowerCase().includes(searchLower) ||
-      provider.categories?.some(cat => cat.toLowerCase().includes(searchLower))
-    );
-  });
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -514,40 +592,13 @@ const Messages = () => {
           {!selectedChat ? (
             // Chat Boxes View
             <div className="space-y-6">
-              {/* Header with New Chat Button */}
+              {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center justify-between sm:justify-start sm:space-x-4">
                   <h2 className="text-xl font-semibold text-gray-900">Your Conversations</h2>
-                  <Button 
-                    size="sm" 
-                    onClick={() => {
-                      setShowProviderSearch(!showProviderSearch);
-                      if (!showProviderSearch) {
-                        fetchProviders();
-                      }
-                    }}
-                    className="flex items-center gap-2 sm:hidden"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New
-                  </Button>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => {
-                      setShowProviderSearch(!showProviderSearch);
-                      if (!showProviderSearch) {
-                        fetchProviders();
-                      }
-                    }}
-                    className="hidden sm:flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New Chat
-                  </Button>
-                  
                   {/* Search */}
                   <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -561,54 +612,7 @@ const Messages = () => {
                 </div>
               </div>
 
-              {/* Provider Search Panel */}
-              {showProviderSearch && (
-                <Card className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-gray-900">Find Providers to Chat With</h4>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => setShowProviderSearch(false)}
-                      >
-                        ×
-                      </Button>
-                    </div>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search providers..."
-                        value={providerSearchTerm}
-                        onChange={(e) => setProviderSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-64 overflow-y-auto">
-                      {filteredProviders.slice(0, 12).map(provider => (
-                        <Card 
-                          key={provider.id}
-                          className="p-3 cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => startConversationWithProvider(provider.userId)}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                              <Briefcase className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{provider.name}</p>
-                              <p className="text-xs text-gray-500 truncate">
-                                {provider.categories?.slice(0, 2).join(', ')}
-                              </p>
-                            </div>
-                            <MessageSquare className="h-4 w-4 text-gray-400" />
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              )}
+
 
               {/* Error Display */}
               {error && (
@@ -661,25 +665,11 @@ const Messages = () => {
                       <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <MessageSquare className="h-10 w-10 text-blue-600" />
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-3">Welcome to Messages!</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">No Conversations Yet</h3>
                       <p className="text-gray-600 mb-6 leading-relaxed">
                         You haven't started any conversations yet. Connect with service providers to get help with your projects, ask questions, or discuss your requirements.
                       </p>
                       <div className="space-y-3">
-                        <Button 
-                          onClick={() => {
-                            setShowProviderSearch(true);
-                            fetchProviders();
-                          }}
-                          className="w-full"
-                          size="lg"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Find Providers to Chat With
-                        </Button>
-                        <p className="text-sm text-gray-500">
-                          Browse our network of verified service providers
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -788,6 +778,7 @@ const Messages = () => {
                         <p className="text-gray-500 text-sm">
                           Start conversations with providers who are interested in your services
                         </p>
+
                       </div>
                     ) : (
                       <div className="divide-y divide-gray-100">

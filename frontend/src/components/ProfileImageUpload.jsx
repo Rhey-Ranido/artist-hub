@@ -108,8 +108,8 @@ const ProfileImageUpload = ({
           ? data.provider?.profileImage
           : data.user?.profileImage;
         
-        if (profileImage) {
-          const fallbackUrl = `http://localhost:5000/uploads/${profileImage}`;
+            if (profileImage) {
+      const fallbackUrl = `http://localhost:5000/uploads/${profileImage}`;
           setPreviewUrl(fallbackUrl);
           if (onImageUpdate) {
             onImageUpdate(fallbackUrl);

@@ -7,6 +7,7 @@ import ProviderRegistrationForm from '../components/ProviderRegistrationForm';
 import ServiceCreationForm from '../components/ServiceCreationForm';
 import DarkModeToggle from '../components/DarkModeToggle';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +30,7 @@ import {
 const UserSettings = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
+  const { updateUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   
@@ -65,7 +67,7 @@ const UserSettings = () => {
     showFlow: false
   });
 
-  const API_BASE_URL = 'http://localhost:3000/api';
+  const API_BASE_URL = 'http://localhost:5000/api';
 
   // Get auth token
   const getAuthToken = () => {
@@ -83,7 +85,7 @@ const UserSettings = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -95,18 +97,23 @@ const UserSettings = () => {
       }
 
       const data = await response.json();
-      const userData = data.user;
+      console.log('API Response:', data);
+      
+      const userData = data.data?.user || data.user || data;
+      console.log('User Data:', userData);
       
       // Ensure profileImageUrl is properly set
       const updatedUserData = {
         ...userData,
-        profileImageUrl: userData.profileImageUrl || userData.profileImage || null
+        profileImageUrl: userData.profileImageUrl || (userData.profileImage ? `http://localhost:5000/uploads/${userData.profileImage}` : null)
       };
+      
+      console.log('Updated User Data:', updatedUserData);
       
       setUser(updatedUserData);
       
-      // Update localStorage with the complete user data including profile image
-      localStorage.setItem('user', JSON.stringify(updatedUserData));
+      // Update AuthContext to ensure all components have the latest user data
+      updateUser(updatedUserData);
       
       // Pre-fill forms
       setProfileForm({
@@ -165,8 +172,8 @@ const UserSettings = () => {
       const updatedUser = data.user;
       setUser(updatedUser);
       
-      // Update localStorage to persist the change
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Update AuthContext to notify all components (including Navbar)
+      updateUser(updatedUser);
       
       // Trigger custom event to notify other components (like Navbar)
       window.dispatchEvent(new CustomEvent('userProfileUpdated'));
@@ -230,8 +237,8 @@ const UserSettings = () => {
     
     setUser(updatedUser);
     
-    // Update localStorage to persist the change
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    // Update AuthContext to notify all components (including Navbar)
+    updateUser({ profileImageUrl: imageUrl });
     
     // Trigger custom event to notify other components (like Navbar)
     window.dispatchEvent(new CustomEvent('userProfileUpdated', { 

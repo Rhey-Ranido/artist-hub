@@ -43,7 +43,7 @@ const upload = multer({
 
 // Public routes
 router.get("/search", searchUsers);
-router.get("/:id", getUserProfile);
+router.get("/:id", getUserProfile); // Supports both ID and username
 
 // Protected routes
 router.put("/profile", authenticateToken, updateUserProfile);

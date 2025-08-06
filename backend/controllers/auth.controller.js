@@ -267,6 +267,11 @@ export const getMe = async (req, res) => {
       );
     }
 
+    // Construct profile image URL if exists
+    const profileImageUrl = user.profileImage 
+      ? `${req.protocol}://${req.get('host')}/uploads/${user.profileImage}`
+      : null;
+
     const successResponse = createSuccessResponse({
       message: 'User profile retrieved successfully',
       data: {
@@ -279,6 +284,7 @@ export const getMe = async (req, res) => {
           lastName: user.lastName,
           bio: user.bio,
           profileImage: user.profileImage,
+          profileImageUrl: profileImageUrl,
           artworksCount: user.artworksCount,
           likesReceived: user.likesReceived,
           followers: user.followers,

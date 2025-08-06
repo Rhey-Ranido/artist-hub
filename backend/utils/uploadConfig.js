@@ -58,10 +58,10 @@ const upload = multer({
 });
 
 // Upload middleware functions
-export const uploadSingle = (uploadType) => {
+export const uploadSingle = (uploadType, fieldName = 'image') => {
   return (req, res, next) => {
     req.uploadType = uploadType;
-    upload.single('image')(req, res, (err) => {
+    upload.single(fieldName)(req, res, (err) => {
       if (err) {
         if (err instanceof multer.MulterError) {
           if (err.code === 'LIMIT_FILE_SIZE') {

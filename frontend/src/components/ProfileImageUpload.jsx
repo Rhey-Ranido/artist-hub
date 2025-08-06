@@ -20,7 +20,7 @@ const ProfileImageUpload = ({
     return localStorage.getItem('token');
   };
 
-  const API_BASE_URL = 'http://localhost:3000/api';
+  const API_BASE_URL = 'http://localhost:5000/api';
 
   useEffect(() => {
     setPreviewUrl(currentImageUrl);
@@ -68,6 +68,7 @@ const ProfileImageUpload = ({
 
     try {
       const formData = new FormData();
+      // Use correct field name for upload endpoint
       formData.append('image', file);
 
       const endpoint = type === 'provider' 
@@ -88,17 +89,34 @@ const ProfileImageUpload = ({
       }
 
       const data = await response.json();
+      console.log('Upload response:', data);
       
       // Update preview with actual uploaded image URL
       const imageUrl = type === 'provider' 
         ? data.provider?.profileImageUrl
         : data.user?.profileImageUrl;
 
-      setPreviewUrl(imageUrl);
-
-      // Notify parent component
-      if (onImageUpdate) {
-        onImageUpdate(imageUrl);
+      if (imageUrl) {
+        setPreviewUrl(imageUrl);
+        // Notify parent component
+        if (onImageUpdate) {
+          onImageUpdate(imageUrl);
+        }
+      } else {
+        // Fallback: construct URL from profileImage path
+        const profileImage = type === 'provider' 
+          ? data.provider?.profileImage
+          : data.user?.profileImage;
+        
+        if (profileImage) {
+          const fallbackUrl = `http://localhost:5000/uploads/${profileImage}`;
+          setPreviewUrl(fallbackUrl);
+          if (onImageUpdate) {
+            onImageUpdate(fallbackUrl);
+          }
+        } else {
+          throw new Error('No image URL received from server');
+        }
       }
 
       console.log('Image uploaded successfully:', data);

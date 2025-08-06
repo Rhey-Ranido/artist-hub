@@ -1,15 +1,28 @@
 import User from "../models/User.js";
 import Artwork from "../models/Artwork.js";
 
-// Get user profile
+// Get user profile by ID or username
 export const getUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const user = await User.findById(id)
-      .select("-password")
-      .populate('followers', 'username profileImage')
-      .populate('following', 'username profileImage');
+    // Check if id is a valid ObjectId (MongoDB ID)
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    
+    let user;
+    if (isObjectId) {
+      // Search by ID
+      user = await User.findById(id)
+        .select("-password")
+        .populate('followers', 'username profileImage')
+        .populate('following', 'username profileImage');
+    } else {
+      // Search by username
+      user = await User.findOne({ username: id })
+        .select("-password")
+        .populate('followers', 'username profileImage')
+        .populate('following', 'username profileImage');
+    }
       
     if (!user) {
       return res.status(404).json({ 
@@ -20,14 +33,28 @@ export const getUserProfile = async (req, res) => {
 
     // Get user's public artworks count
     const publicArtworksCount = await Artwork.countDocuments({ 
-      artist: id, 
+      artist: user._id, 
       isPublic: true 
+    });
+
+    // Construct full profile image URL with explicit port
+    const host = req.get('host') || 'localhost:5000';
+    const profileImageUrl = user.profileImage
+      ? `${req.protocol}://${host}${user.profileImage}`
+      : null;
+
+    console.log('Profile Image Debug:', {
+      profileImage: user.profileImage,
+      profileImageUrl: profileImageUrl,
+      protocol: req.protocol,
+      host: req.get('host')
     });
 
     res.json({
       success: true,
       user: {
         ...user.toObject(),
+        profileImageUrl,
         publicArtworksCount
       }
     });

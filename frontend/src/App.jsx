@@ -24,7 +24,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/create" element={<Create />} />
             <Route path="/artwork/:id" element={<ArtworkDetails />} />
-            <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/profile/:username" element={<Profile />} />
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/search" element={<Search />} />

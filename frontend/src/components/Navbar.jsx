@@ -28,9 +28,17 @@ const Navbar = () => {
       }
     };
 
-    // Cleanup debug function
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      console.log('🔄 Profile update event received in Navbar');
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate);
+
+    // Cleanup debug function and event listener
     return () => {
       delete window.debugProfileImage;
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate);
     };
   }, [user]);
 
@@ -216,6 +224,16 @@ const Navbar = () => {
                       <div className="absolute right-0 mt-2 w-48 bg-background rounded-md shadow-lg border border-border py-1 z-50 animate-in fade-in duration-200">
                         <button
                           onClick={() => {
+                            handleNavigation(`/profile/${user.username}`);
+                            setProfileDropdownOpen(false);
+                          }}
+                          className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors duration-200"
+                        >
+                          <User className="h-4 w-4 mr-3" />
+                          My Profile
+                        </button>
+                        <button
+                          onClick={() => {
                             handleNavigation('/settings');
                             setProfileDropdownOpen(false);
                           }}
@@ -311,6 +329,9 @@ const Navbar = () => {
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">
+                    <MobileNavLink href={`/profile/${user.username}`} icon={User}>
+                      My Profile
+                    </MobileNavLink>
                     <MobileNavLink href="/settings" icon={Settings}>
                       Settings
                     </MobileNavLink>

@@ -15,10 +15,10 @@ const router = express.Router();
 router.use(protect);
 
 // User profile image upload
-router.post("/profile/user", uploadSingle('profile'), uploadUserProfileImage);
+router.post("/profile/user", uploadSingle('profile', 'image'), uploadUserProfileImage);
 
 // Provider profile image upload
-router.post("/profile/provider", uploadSingle('profile'), uploadProviderProfileImage);
+router.post("/profile/provider", uploadSingle('profile', 'image'), uploadProviderProfileImage);
 
 // Service images upload (multiple files)
 router.post("/service/:serviceId", uploadMultiple('service', 5), uploadServiceImages);

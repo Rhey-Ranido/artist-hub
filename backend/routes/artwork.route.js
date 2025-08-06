@@ -48,7 +48,7 @@ const upload = multer({
 router.get("/feed", getArtworkFeed);
 router.get("/search", searchArtworks);
 router.get("/:id", getArtworkById);
-router.get("/user/:userId", getUserArtworks);
+router.get("/user/:userId", getUserArtworks); // Supports both ID and username
 
 // Protected routes
 router.post("/", authenticateToken, upload.single('image'), createArtwork);

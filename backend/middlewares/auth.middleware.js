@@ -42,35 +42,4 @@ export const restrictTo = (...roles) => {
   };
 };
 
-// controllers/auth.controller.js
-export const getMe = async (req, res) => {
-  if (!req.user?.id) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
 
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    // Generate profile image URL if exists
-    const profileImageUrl = user.profileImage 
-      ? `${req.protocol}://${req.get('host')}/uploads/${user.profileImage}`
-      : null;
-
-    res.status(200).json({
-      _id: user._id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      profileImage: user.profileImage,
-      profileImageUrl,
-      phone: user.phone,
-      isVerified: user.isVerified,
-      createdAt: user.createdAt,
-    });
-  } catch (err) {
-    console.error("Error in getMe:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-};

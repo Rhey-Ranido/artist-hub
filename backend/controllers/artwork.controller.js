@@ -7,8 +7,10 @@ import path from "path";
 // Create new artwork
 export const createArtwork = async (req, res) => {
   try {
-    const { title, description, canvasData, tags, dimensions, tools, colors } = req.body;
+    const { title, description, canvasData, tags, dimensions, tools, colors, isPublic } = req.body;
     const userId = req.user.id;
+
+    console.log("Received artwork data:", { title, description, canvasData: canvasData ? "present" : "missing", tags, dimensions, tools, colors, isPublic });
 
     // Validate required fields
     if (!title || !canvasData || !dimensions) {
@@ -18,16 +20,36 @@ export const createArtwork = async (req, res) => {
       });
     }
 
+    // Parse JSON strings from FormData
+    let parsedTags = [];
+    let parsedDimensions = {};
+    let parsedTools = [];
+    let parsedColors = [];
+
+    try {
+      parsedTags = tags ? JSON.parse(tags) : [];
+      parsedDimensions = dimensions ? JSON.parse(dimensions) : {};
+      parsedTools = tools ? JSON.parse(tools) : [];
+      parsedColors = colors ? JSON.parse(colors) : [];
+    } catch (parseError) {
+      console.error("JSON parsing error:", parseError);
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid JSON format in request data" 
+      });
+    }
+
     // Create artwork with image URL if uploaded
     const artworkData = {
       title,
-      description,
+      description: description || "",
       canvasData,
-      tags: tags || [],
+      tags: parsedTags,
       artist: userId,
-      dimensions,
-      tools: tools || [],
-      colors: colors || [],
+      dimensions: parsedDimensions,
+      tools: parsedTools,
+      colors: parsedColors,
+      isPublic: isPublic === 'true' || isPublic === true,
       imageUrl: req.file ? `/uploads/artworks/${req.file.filename}` : ""
     };
 
@@ -67,17 +89,25 @@ export const getArtworkFeed = async (req, res) => {
     sortOptions[sortBy] = sortOrder;
 
     const artworks = await Artwork.find({ isPublic: true })
-      .populate('artist', 'username profileImage')
+      .populate('artist', 'username profileImage firstName lastName')
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
       .lean();
 
+    // Construct full URLs for artwork images
+    const host = req.get('host') || 'localhost:5000';
+    const artworksWithUrls = artworks.map(artwork => ({
+      ...artwork,
+      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+    }));
+
     const total = await Artwork.countDocuments({ isPublic: true });
 
     res.json({
       success: true,
-      artworks,
+      artworks: artworksWithUrls,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -127,7 +157,7 @@ export const getArtworkById = async (req, res) => {
   }
 };
 
-// Get user's artworks
+// Get user's artworks by ID or username
 export const getUserArtworks = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -135,25 +165,52 @@ export const getUserArtworks = async (req, res) => {
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    const query = { artist: userId };
+    // Check if userId is a valid ObjectId (MongoDB ID)
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(userId);
+    
+    let user;
+    if (isObjectId) {
+      // Search by ID
+      user = await User.findById(userId);
+    } else {
+      // Search by username
+      user = await User.findOne({ username: userId });
+    }
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    const query = { artist: user._id };
     
     // If not the owner, only show public artworks
-    if (req.user.id !== userId) {
+    if (req.user?.id !== user._id.toString()) {
       query.isPublic = true;
     }
 
     const artworks = await Artwork.find(query)
-      .populate('artist', 'username profileImage')
+      .populate('artist', 'username profileImage firstName lastName')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
+    // Construct full URLs for artwork images
+    const host = req.get('host') || 'localhost:5000';
+    const artworksWithUrls = artworks.map(artwork => ({
+      ...artwork,
+      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+    }));
+
     const total = await Artwork.countDocuments(query);
 
     res.json({
       success: true,
-      artworks,
+      artworks: artworksWithUrls,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),

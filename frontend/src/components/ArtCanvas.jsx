@@ -17,14 +17,21 @@ import {
   Circle,
   Square,
   Minus,
-  Loader2
+  Loader2,
+  PenTool,
+  Paintbrush,
+  Airplay,
+  Droplets
 } from 'lucide-react';
 
 const ArtCanvas = ({ onSave, initialData = null }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('brush');
+  const [brushType, setBrushType] = useState('normal'); // normal, pencil, marker, watercolor, spray
   const [brushSize, setBrushSize] = useState(5);
+  const [opacity, setOpacity] = useState(100);
+  const [flow, setFlow] = useState(100);
   const [color, setColor] = useState('#000000');
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -41,6 +48,14 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF',
     '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
     '#FFC0CB', '#A52A2A', '#808080', '#000080', '#008000'
+  ];
+
+  const brushTypes = [
+    { id: 'normal', name: 'Normal', icon: Brush, description: 'Standard brush' },
+    { id: 'pencil', name: 'Pencil', icon: PenTool, description: 'Hard edge pencil' },
+    { id: 'marker', name: 'Marker', icon: Paintbrush, description: 'Soft marker brush' },
+    { id: 'watercolor', name: 'Watercolor', icon: Droplets, description: 'Watercolor effect' },
+    { id: 'spray', name: 'Spray', icon: Airplay, description: 'Airbrush spray' }
   ];
 
   // Initialize canvas
@@ -139,14 +154,81 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     };
   };
 
+  const applyBrushSettings = (ctx) => {
+    const alpha = (opacity / 100);
+    
+    if (tool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      
+      switch (brushType) {
+        case 'pencil':
+          ctx.lineCap = 'square';
+          ctx.lineJoin = 'miter';
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = alpha;
+          break;
+        case 'marker':
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = alpha * 0.7;
+          break;
+        case 'watercolor':
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = alpha * 0.3;
+          break;
+        case 'spray':
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = alpha * 0.1;
+          break;
+        default: // normal
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = alpha;
+      }
+    }
+    
+    ctx.lineWidth = brushSize;
+  };
+
+  const drawSpray = (ctx, x, y, size) => {
+    const density = Math.floor(size * 2);
+    for (let i = 0; i < density; i++) {
+      const offsetX = (Math.random() - 0.5) * size;
+      const offsetY = (Math.random() - 0.5) * size;
+      const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+      
+      if (distance <= size / 2) {
+        ctx.beginPath();
+        ctx.arc(x + offsetX, y + offsetY, Math.random() * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+
   const startDrawing = (e) => {
     setIsDrawing(true);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const pos = getMousePos(e);
     
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    applyBrushSettings(ctx);
+    
+    if (brushType === 'spray') {
+      drawSpray(ctx, pos.x, pos.y, brushSize);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
   };
 
   const draw = (e) => {
@@ -156,12 +238,22 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     const ctx = canvas.getContext('2d');
     const pos = getMousePos(e);
     
-    ctx.lineWidth = brushSize;
-    ctx.strokeStyle = tool === 'eraser' ? '#FFFFFF' : color;
-    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+    applyBrushSettings(ctx);
     
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    if (brushType === 'spray') {
+      drawSpray(ctx, pos.x, pos.y, brushSize);
+    } else if (brushType === 'watercolor') {
+      // Create watercolor effect with multiple overlapping strokes
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(pos.x + (Math.random() - 0.5) * 2, pos.y + (Math.random() - 0.5) * 2);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+    } else {
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
   };
 
   const stopDrawing = () => {
@@ -207,7 +299,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
           width: canvas.width,
           height: canvas.height
         },
-        tools: [tool],
+        tools: [tool, brushType],
         colors: [color]
       };
 
@@ -232,13 +324,14 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
           </CardHeader>
           <CardContent>
             {/* Toolbar */}
-            <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="flex flex-wrap gap-4 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               {/* Tools */}
               <div className="flex gap-2">
                 <Button
                   variant={tool === 'brush' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTool('brush')}
+                  title="Brush Tool"
                 >
                   <Brush className="h-4 w-4" />
                 </Button>
@@ -246,10 +339,31 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
                   variant={tool === 'eraser' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTool('eraser')}
+                  title="Eraser Tool"
                 >
                   <Eraser className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* Brush Types (only show when brush tool is selected) */}
+              {tool === 'brush' && (
+                <div className="flex gap-2 border-l pl-4">
+                  {brushTypes.map((brush) => {
+                    const IconComponent = brush.icon;
+                    return (
+                      <Button
+                        key={brush.id}
+                        variant={brushType === brush.id ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setBrushType(brush.id)}
+                        title={brush.description}
+                      >
+                        <IconComponent className="h-4 w-4" />
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Brush Size */}
               <div className="flex items-center gap-2">
@@ -265,6 +379,23 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
                 />
                 <span className="text-sm w-8">{brushSize}</span>
               </div>
+
+              {/* Opacity Control */}
+              {tool === 'brush' && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="opacity" className="text-sm">Opacity:</Label>
+                  <Input
+                    id="opacity"
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={opacity}
+                    onChange={(e) => setOpacity(parseInt(e.target.value))}
+                    className="w-20"
+                  />
+                  <span className="text-sm w-8">{opacity}%</span>
+                </div>
+              )}
 
               {/* History Controls */}
               <div className="flex gap-2">

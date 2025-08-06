@@ -76,6 +76,15 @@ mongoose
       });
     });
 
+    // Test image endpoint
+    app.get("/api/test-image", (req, res) => {
+      res.json({
+        success: true,
+        message: "Test image endpoint",
+        testImageUrl: `${req.protocol}://${req.get('host')}/uploads/profiles/heroImage-1753234516939-132793031.jpg`
+      });
+    });
+
     // routes
     app.use("/api/auth", authRoutes);
     app.use("/api/protected", protectedRoutes);

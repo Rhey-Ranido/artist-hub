@@ -1,19 +1,17 @@
 import User from "../models/User.js";
 import { generateToken } from "../utils/generateToken.js";
+import { 
+  STATUS_CODES, 
+  ERROR_CODES, 
+  createSuccessResponse, 
+  createErrorResponse, 
+  createValidationErrorResponse,
+  sendSuccessResponse,
+  sendErrorResponse,
+  authResponses 
+} from "../utils/responseUtils.js";
 
-const formatUserResponse = (user) => ({
-  user: { 
-    id: user._id, 
-    username: user.username,
-    email: user.email, 
-    role: user.role,
-    profileImage: user.profileImage,
-    bio: user.bio,
-    artworksCount: user.artworksCount,
-    likesReceived: user.likesReceived
-  },
-  token: generateToken(user),
-});
+
 
 export const register = async (req, res) => {
   let { username, email, password, role, firstName, lastName } = req.body;
@@ -22,19 +20,69 @@ export const register = async (req, res) => {
     // Default role to "user" if not provided
     role = role || "user";
 
-    // Input validation
-    if (!username || !email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Username, email, and password are required" 
-      });
+    // Comprehensive validation
+    const validationErrors = {};
+
+    // Required fields validation
+    if (!username) {
+      validationErrors.username = {
+        message: 'Username is required',
+        code: ERROR_CODES.MISSING_REQUIRED_FIELDS
+      };
+    }
+    
+    if (!email) {
+      validationErrors.email = {
+        message: 'Email is required',
+        code: ERROR_CODES.MISSING_REQUIRED_FIELDS
+      };
+    }
+    
+    if (!password) {
+      validationErrors.password = {
+        message: 'Password is required',
+        code: ERROR_CODES.MISSING_REQUIRED_FIELDS
+      };
     }
 
-    if (username.length < 3 || username.length > 30) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Username must be between 3 and 30 characters" 
-      });
+    // Username length validation
+    if (username && (username.length < 3 || username.length > 30)) {
+      validationErrors.username = {
+        message: 'Username must be between 3 and 30 characters',
+        code: username.length < 3 ? ERROR_CODES.USERNAME_TOO_SHORT : ERROR_CODES.USERNAME_TOO_LONG
+      };
+    }
+
+    // Email format validation
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      validationErrors.email = {
+        message: 'Please provide a valid email address',
+        code: ERROR_CODES.INVALID_EMAIL_FORMAT
+      };
+    }
+
+    // Password strength validation
+    if (password && password.length < 6) {
+      validationErrors.password = {
+        message: 'Password must be at least 6 characters long',
+        code: ERROR_CODES.PASSWORD_TOO_WEAK
+      };
+    }
+
+    // Username format validation (alphanumeric and underscores only)
+    if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
+      validationErrors.username = {
+        message: 'Username can only contain letters, numbers, and underscores',
+        code: ERROR_CODES.MISSING_REQUIRED_FIELDS
+      };
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      return sendErrorResponse(
+        res, 
+        STATUS_CODES.VALIDATION_ERROR, 
+        createValidationErrorResponse(validationErrors)
+      );
     }
 
     // Check for existing user
@@ -43,11 +91,19 @@ export const register = async (req, res) => {
     });
     
     if (existingUser) {
-      const field = existingUser.email === email ? "Email" : "Username";
-      return res.status(400).json({ 
-        success: false, 
-        message: `${field} already in use` 
-      });
+      if (existingUser.email === email) {
+        return sendErrorResponse(
+          res, 
+          STATUS_CODES.CONFLICT, 
+          authResponses.emailAlreadyExists()
+        );
+      } else {
+        return sendErrorResponse(
+          res, 
+          STATUS_CODES.CONFLICT, 
+          authResponses.usernameAlreadyExists()
+        );
+      }
     }
 
     // Create user
@@ -60,19 +116,45 @@ export const register = async (req, res) => {
       lastName: lastName || ''
     });
 
-    // Respond
-    res.status(201).json({
-      success: true,
-      message: "Registration successful",
-      ...formatUserResponse(user)
-    });
+    // Generate token
+    const token = generateToken(user);
+
+    // Send success response
+    const successResponse = authResponses.registerSuccess(user, token);
+    
+    return sendSuccessResponse(res, STATUS_CODES.CREATED, successResponse);
+
   } catch (err) {
     console.error("Registration error:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "Registration failed", 
-      error: err.message 
+    
+    // Handle specific MongoDB errors
+    let errorResponse;
+    
+    if (err.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(err.keyValue)[0];
+      if (field === 'email') {
+        errorResponse = authResponses.emailAlreadyExists();
+      } else if (field === 'username') {
+        errorResponse = authResponses.usernameAlreadyExists();
+      } else {
+        errorResponse = createErrorResponse({
+          message: `${field} already exists`,
+          errorCode: ERROR_CODES.CONFLICT,
+          details: `A user with this ${field} already exists`
+        });
+      }
+      return sendErrorResponse(res, STATUS_CODES.CONFLICT, errorResponse);
+    }
+    
+    // General server error
+    errorResponse = createErrorResponse({
+      message: 'Registration failed due to server error',
+      errorCode: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      details: process.env.NODE_ENV === 'development' ? err.message : 'Please try again later'
     });
+    
+    return sendErrorResponse(res, STATUS_CODES.INTERNAL_ERROR, errorResponse);
   }
 };
 
@@ -80,41 +162,87 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Email and password are required" 
-      });
+    // Validation
+    const validationErrors = {};
+    
+    if (!email) {
+      validationErrors.email = {
+        message: 'Email is required',
+        code: ERROR_CODES.MISSING_REQUIRED_FIELDS
+      };
+    }
+    
+    if (!password) {
+      validationErrors.password = {
+        message: 'Password is required',
+        code: ERROR_CODES.MISSING_REQUIRED_FIELDS
+      };
+    }
+
+    // Email format validation
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      validationErrors.email = {
+        message: 'Please provide a valid email address',
+        code: ERROR_CODES.INVALID_EMAIL_FORMAT
+      };
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      return sendErrorResponse(
+        res, 
+        STATUS_CODES.VALIDATION_ERROR, 
+        createValidationErrorResponse(validationErrors)
+      );
     }
 
     // Find user
-    const user = await User.findOne({ email });
-    const validPassword = user && (await user.comparePassword(password));
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return sendErrorResponse(
+        res, 
+        STATUS_CODES.UNAUTHORIZED, 
+        authResponses.invalidCredentials()
+      );
+    }
 
+    // Check password
+    const validPassword = await user.comparePassword(password);
     if (!validPassword) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid credentials" 
-      });
+      return sendErrorResponse(
+        res, 
+        STATUS_CODES.UNAUTHORIZED, 
+        authResponses.invalidCredentials()
+      );
     }
 
     // Update last active
     user.lastActive = new Date();
     await user.save();
 
-    // Respond
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      ...formatUserResponse(user)
-    });
+    // Generate token
+    const token = generateToken(user);
+
+    // Send success response
+    const successResponse = authResponses.loginSuccess(user, token);
+    
+    // Add user agent info if available
+    if (req.headers['user-agent']) {
+      successResponse.meta.userAgent = req.headers['user-agent'];
+    }
+
+    return sendSuccessResponse(res, STATUS_CODES.SUCCESS, successResponse);
+
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "Login failed", 
-      error: err.message 
+    
+    const errorResponse = createErrorResponse({
+      message: 'Login failed due to server error',
+      errorCode: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      details: process.env.NODE_ENV === 'development' ? err.message : 'Please try again later'
     });
+    
+    return sendErrorResponse(res, STATUS_CODES.INTERNAL_ERROR, errorResponse);
   }
 };
 
@@ -123,43 +251,59 @@ export const getMe = async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Not authenticated" 
-      });
+      return sendErrorResponse(
+        res, 
+        STATUS_CODES.UNAUTHORIZED, 
+        authResponses.notAuthenticated()
+      );
     }
 
     const user = await User.findById(userId).select("-password");
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
+      return sendErrorResponse(
+        res, 
+        STATUS_CODES.NOT_FOUND, 
+        authResponses.userNotFound()
+      );
     }
 
-    res.status(200).json({
-      success: true,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        bio: user.bio,
-        profileImage: user.profileImage,
-        artworksCount: user.artworksCount,
-        likesReceived: user.likesReceived,
-        followers: user.followers,
-        following: user.following,
-        createdAt: user.createdAt,
+    const successResponse = createSuccessResponse({
+      message: 'User profile retrieved successfully',
+      data: {
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          bio: user.bio,
+          profileImage: user.profileImage,
+          artworksCount: user.artworksCount,
+          likesReceived: user.likesReceived,
+          followers: user.followers,
+          following: user.following,
+          createdAt: user.createdAt,
+          lastActive: user.lastActive
+        }
+      },
+      meta: {
+        requestId: req.headers['x-request-id'] || null,
+        retrievedAt: new Date().toISOString()
       }
     });
+
+    return sendSuccessResponse(res, STATUS_CODES.SUCCESS, successResponse);
+
   } catch (err) {
     console.error("Error in getMe:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error" 
+    
+    const errorResponse = createErrorResponse({
+      message: 'Failed to retrieve user profile',
+      errorCode: ERROR_CODES.INTERNAL_SERVER_ERROR,
+      details: process.env.NODE_ENV === 'development' ? err.message : 'Please try again later'
     });
+    
+    return sendErrorResponse(res, STATUS_CODES.INTERNAL_ERROR, errorResponse);
   }
 };

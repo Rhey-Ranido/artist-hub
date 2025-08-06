@@ -44,6 +44,8 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // MongoDB + HTTP server + Socket.IO
 const server = http.createServer(app);
+console.log("✅ MONGO_URI:", process.env.MONGO_URI);
+
 
 mongoose
   .connect(process.env.MONGO_URI)

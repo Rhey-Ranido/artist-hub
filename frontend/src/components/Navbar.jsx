@@ -2,71 +2,37 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DarkModeToggle from './DarkModeToggle';
+import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle } from 'lucide-react';
 
 const Navbar = () => {
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Function to load user data from localStorage
-  const loadUserData = () => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
-    } else {
-      setUser(null);
-    }
-  };
-
+  // Add debug function to global scope (for troubleshooting)
   useEffect(() => {
-    loadUserData();
-
-    // Listen for custom user update events
-    const handleUserUpdate = () => {
-      loadUserData();
-    };
-
-    // Listen for localStorage changes (for cross-tab updates)
-    const handleStorageChange = (e) => {
-      if (e.key === 'user' || e.key === 'token') {
-        loadUserData();
-      }
-    };
-
-    // Add event listeners
-    window.addEventListener('userProfileUpdated', handleUserUpdate);
-    window.addEventListener('storage', handleStorageChange);
-
-    // Add debug function to global scope (for troubleshooting)
     window.debugProfileImage = () => {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
+      if (user) {
         console.log('🔍 Profile Image Debug Info:');
         console.log('User object:', user);
         console.log('Profile Image URL:', user.profileImageUrl || user.profileImage || 'Not set');
         console.log('Has profile image:', !!(user.profileImageUrl || user.profileImage));
         return user;
       } else {
-        console.log('❌ No user data found in localStorage');
+        console.log('❌ No user data found');
         return null;
       }
     };
 
-    // Cleanup event listeners
+    // Cleanup debug function
     return () => {
-      window.removeEventListener('userProfileUpdated', handleUserUpdate);
-      window.removeEventListener('storage', handleStorageChange);
       delete window.debugProfileImage;
     };
-  }, []);
+  }, [user]);
 
   // Handle clicking outside dropdown to close it
   useEffect(() => {
@@ -83,9 +49,7 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+    logout();
     navigate('/');
     setIsOpen(false);
   };

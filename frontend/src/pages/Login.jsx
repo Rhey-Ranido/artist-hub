@@ -1,26 +1,21 @@
-/* eslint-disable no-unused-vars */
 // src/pages/Login.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import LoginForm from '../components/LoginForm';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (isAuthenticated()) {
       navigate('/'); // Redirect to home if already logged in
     }
-  }, [navigate]);
+  }, [navigate, isAuthenticated]);
 
   const handleLoginSuccess = (data) => {
-    setUser(data.user);
     console.log('Login successful:', data);
     navigate('/'); // Redirect to home after successful login
   };

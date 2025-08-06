@@ -5,8 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { authApi, handleAuthResponse } from '@/utils/apiClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginForm = ({ onLoginSuccess }) => {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -14,6 +17,7 @@ const LoginForm = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,44 +25,56 @@ const LoginForm = ({ onLoginSuccess }) => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
+    // Clear errors when user starts typing
     if (error) setError('');
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await authApi.login(formData.email, formData.password);
+
+      handleAuthResponse(
+        response,
+        // Success callback
+        (data) => {
+          // Use AuthContext to handle login
+          login(data.user, data.token);
+          
+          // Reset form
+          setFormData({ email: '', password: '' });
+          
+          // Call success callback
+          if (onLoginSuccess) {
+            onLoginSuccess(data);
+          }
         },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      // Store token in localStorage (or use a more secure method)
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Call success callback
-      if (onLoginSuccess) {
-        onLoginSuccess(data);
-      }
-
-      // Reset form
-      setFormData({ email: '', password: '' });
+        // Error callback
+        (errorInfo) => {
+          if (errorInfo.isValidationError) {
+            // Set field-specific errors
+            setFieldErrors(errorInfo.validationErrors);
+            setError('Please check the form for errors');
+          } else {
+            // Set general error
+            setError(errorInfo.message);
+          }
+        }
+      );
       
     } catch (err) {
-      setError(err.message || 'An error occurred during login');
+      setError('Network error. Please check your connection.');
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +107,11 @@ const LoginForm = ({ onLoginSuccess }) => {
               onChange={handleChange}
               required
               disabled={isLoading}
+              className={fieldErrors.email ? 'border-red-500' : ''}
             />
+            {fieldErrors.email && (
+              <p className="text-sm text-red-500">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -106,7 +126,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                 onChange={handleChange}
                 required
                 disabled={isLoading}
-                className="pr-10"
+                className={`pr-10 ${fieldErrors.password ? 'border-red-500' : ''}`}
               />
               <button
                 type="button"
@@ -121,6 +141,9 @@ const LoginForm = ({ onLoginSuccess }) => {
                 )}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p className="text-sm text-red-500">{fieldErrors.password}</p>
+            )}
           </div>
 
           <Button 

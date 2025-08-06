@@ -1,20 +1,19 @@
 // src/pages/Register.jsx
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import SignupForm from '../components/SignupForm';
 
 export default function Register() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
+    if (isAuthenticated()) {
       navigate('/'); // Redirect to home if already logged in
     }
-  }, [navigate]);
+  }, [navigate, isAuthenticated]);
 
   const handleSignupSuccess = (data) => {
     console.log('Signup successful:', data);

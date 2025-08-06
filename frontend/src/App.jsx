@@ -7,11 +7,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Create from "./pages/Create";
 import ArtworkDetails from "./pages/ArtworkDetails";
+import EditArtwork from "./pages/EditArtwork";
 import Profile from "./pages/Profile";
 import UserSettings from "./pages/UserSettings";
 import Messages from "./pages/Messages";
 import Search from "./pages/Search";
 import AdminDashboard from "./pages/AdminDashboard";
+import MyArtworks from "./pages/MyArtworks";
 
 function App() {
   return (
@@ -24,11 +26,13 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/create" element={<Create />} />
             <Route path="/artwork/:id" element={<ArtworkDetails />} />
+            <Route path="/artwork/:id/edit" element={<EditArtwork />} />
             <Route path="/profile/:username" element={<Profile />} />
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/search" element={<Search />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/my-artworks" element={<MyArtworks />} />
           </Routes>
         </Router>
       </DarkModeProvider>

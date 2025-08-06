@@ -7,7 +7,10 @@ import {
   updateArtwork, 
   deleteArtwork, 
   toggleLike,
-  searchArtworks 
+  searchArtworks,
+  toggleSaveArtwork,
+  getSavedArtworks,
+  getPostedArtworks
 } from "../controllers/artwork.controller.js";
 import { authenticateToken } from "../middlewares/auth.middleware.js";
 import multer from "multer";
@@ -55,5 +58,8 @@ router.post("/", authenticateToken, upload.single('image'), createArtwork);
 router.put("/:id", authenticateToken, updateArtwork);
 router.delete("/:id", authenticateToken, deleteArtwork);
 router.post("/:id/like", authenticateToken, toggleLike);
+router.post("/:id/save", authenticateToken, toggleSaveArtwork);
+router.get("/saved/me", authenticateToken, getSavedArtworks);
+router.get("/posted/me", authenticateToken, getPostedArtworks);
 
 export default router;

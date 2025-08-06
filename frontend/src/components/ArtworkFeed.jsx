@@ -1,17 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Heart, 
   Eye, 
   MessageCircle, 
   Calendar,
   User,
-  Palette
+  Palette,
+  Bookmark
 } from 'lucide-react';
 
 const ArtworkFeed = ({ artworks = [] }) => {
+  const [savedArtworks, setSavedArtworks] = useState(new Set());
+  const [saveLoading, setSaveLoading] = useState(new Set());
+
   // Debug: Log the first artwork to see its structure
   if (artworks.length > 0) {
     console.log('ArtworkFeed - First artwork structure:', artworks[0]);
@@ -30,6 +35,50 @@ const ArtworkFeed = ({ artworks = [] }) => {
     return text.substring(0, maxLength) + '...';
   };
 
+  const handleSaveArtwork = async (artworkId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Redirect to login or show login modal
+      return;
+    }
+
+    try {
+      setSaveLoading(prev => new Set(prev).add(artworkId));
+      const response = await fetch(`http://localhost:5000/api/artworks/${artworkId}/save`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSavedArtworks(prev => {
+          const newSet = new Set(prev);
+          if (data.isSaved) {
+            newSet.add(artworkId);
+          } else {
+            newSet.delete(artworkId);
+          }
+          return newSet;
+        });
+      }
+    } catch (err) {
+      console.error('Save artwork error:', err);
+    } finally {
+      setSaveLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(artworkId);
+        return newSet;
+      });
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {artworks.map((artwork) => {
@@ -37,6 +86,8 @@ const ArtworkFeed = ({ artworks = [] }) => {
           // Safely get like count
           const likeCount = artwork.likesCount || (artwork.likes && Array.isArray(artwork.likes) ? artwork.likes.length : 0);
           const commentCount = artwork.commentsCount || (artwork.comments && Array.isArray(artwork.comments) ? artwork.comments.length : 0);
+          const isSaved = savedArtworks.has(artwork._id);
+          const isLoading = saveLoading.has(artwork._id);
           
           return (
         <Card key={artwork._id} className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -62,6 +113,16 @@ const ArtworkFeed = ({ artworks = [] }) => {
                   Private
                 </Badge>
               )}
+              {/* Save Button */}
+              <Button
+                size="sm"
+                variant="secondary"
+                className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                onClick={(e) => handleSaveArtwork(artwork._id, e)}
+                disabled={isLoading}
+              >
+                <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+              </Button>
             </div>
           </Link>
 

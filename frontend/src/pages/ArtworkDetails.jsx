@@ -19,7 +19,8 @@ import {
   Send,
   Loader2,
   Calendar,
-  Palette
+  Palette,
+  Bookmark
 } from 'lucide-react';
 
 const ArtworkDetails = () => {
@@ -33,6 +34,8 @@ const ArtworkDetails = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
     // Get current user from localStorage
@@ -157,6 +160,35 @@ const ArtworkDetails = () => {
     }
   };
 
+  const handleSaveArtwork = async () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setSaveLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/artworks/${id}/save`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsSaved(data.isSaved);
+      }
+    } catch (err) {
+      console.error('Save artwork error:', err);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   const handleDownload = () => {
     if (artwork?.imageUrl) {
       const link = document.createElement('a');
@@ -233,6 +265,16 @@ const ArtworkDetails = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-bold">{artwork.title}</h1>
                     <div className="flex gap-2">
+                      {!isOwner && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSaveArtwork}
+                          disabled={saveLoading}
+                        >
+                          <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"

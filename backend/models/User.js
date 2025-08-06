@@ -47,6 +47,7 @@ const userSchema = new mongoose.Schema(
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     artworksCount: { type: Number, default: 0 },
     likesReceived: { type: Number, default: 0 },
+    savedArtworks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Artwork" }],
     isVerified: {
       type: Boolean,
       default: false,

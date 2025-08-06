@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import DarkModeToggle from './DarkModeToggle';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle, BookOpen } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +67,14 @@ const Navbar = () => {
   const handleNavigation = (path) => {
     navigate(path);
     setIsOpen(false);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
   };
 
   const isActiveRoute = (path) => {
@@ -181,16 +191,16 @@ const Navbar = () => {
               <NavLink href="/" isActive={isActiveRoute('/')}>
                 Home
               </NavLink>
-              <NavLink href="/search" isActive={isActiveRoute('/search')}>
-                <Search className="h-4 w-4 mr-1 inline" />
-                Explore
-              </NavLink>
 
               {user ? (
                 <>
                   <NavLink href="/create" isActive={isActiveRoute('/create')}>
                     <Plus className="h-4 w-4 mr-1 inline" />
                     Create
+                  </NavLink>
+                  <NavLink href="/my-artworks" isActive={isActiveRoute('/my-artworks')}>
+                    <BookOpen className="h-4 w-4 mr-1 inline" />
+                    My Artworks
                   </NavLink>
                   <NavLink href="/messages" isActive={isActiveRoute('/messages')}>
                     <MessageCircle className="h-4 w-4 mr-1 inline" />
@@ -202,6 +212,20 @@ const Navbar = () => {
                       Admin
                     </NavLink>
                   )}
+                  
+                  {/* Search Bar */}
+                  <form onSubmit={handleSearch} className="flex items-center">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search artworks..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 pr-4 w-64 h-9 text-sm"
+                      />
+                    </div>
+                  </form>
                   
                   {/* User Profile Dropdown */}
                   <div className="relative ml-4 pl-4 border-l border-gray-200" ref={profileDropdownRef}>
@@ -301,14 +325,14 @@ const Navbar = () => {
             <MobileNavLink href="/" icon={Home} isActive={isActiveRoute('/')}>
               Home
             </MobileNavLink>
-            <MobileNavLink href="/search" icon={Search} isActive={isActiveRoute('/search')}>
-              Explore
-            </MobileNavLink>
             
             {user ? (
               <>
                 <MobileNavLink href="/create" icon={Plus} isActive={isActiveRoute('/create')}>
                   Create
+                </MobileNavLink>
+                <MobileNavLink href="/my-artworks" icon={BookOpen} isActive={isActiveRoute('/my-artworks')}>
+                  My Artworks
                 </MobileNavLink>
                 <MobileNavLink href="/messages" icon={MessageCircle} isActive={isActiveRoute('/messages')}>
                   Messages
@@ -318,6 +342,22 @@ const Navbar = () => {
                     Admin
                   </MobileNavLink>
                 )}
+                
+                {/* Mobile Search Bar */}
+                <div className="px-3 py-2">
+                  <form onSubmit={handleSearch} className="flex items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search artworks..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 pr-4 w-full h-10 text-sm"
+                      />
+                    </div>
+                  </form>
+                </div>
                 
                 {/* User info section */}
                 <div className="pt-4 pb-3 border-t border-border">

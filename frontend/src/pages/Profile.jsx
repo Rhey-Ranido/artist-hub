@@ -16,7 +16,8 @@ import {
   Calendar,
   MapPin,
   Edit,
-  Plus
+  Plus,
+  MessageCircle
 } from 'lucide-react';
 
 const Profile = () => {
@@ -72,6 +73,14 @@ const Profile = () => {
 
   const handleCreateArtwork = () => {
     navigate('/create');
+  };
+
+  const handleMessageUser = () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/messages?user=${profileUser._id}&username=${encodeURIComponent(profileUser.username)}`);
   };
 
   if (loading) {
@@ -158,18 +167,25 @@ const Profile = () => {
                   <p className="text-muted-foreground">@{profileUser.username}</p>
                 </div>
                 
-                {isOwnProfile && (
-                  <div className="flex gap-2">
-                    <Button onClick={handleEditProfile} variant="outline">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Edit Profile
+                <div className="flex gap-2">
+                  {isOwnProfile ? (
+                    <>
+                      <Button onClick={handleEditProfile} variant="outline">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                      <Button onClick={handleCreateArtwork}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Artwork
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={handleMessageUser}>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Message
                     </Button>
-                    <Button onClick={handleCreateArtwork}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Artwork
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Stats */}

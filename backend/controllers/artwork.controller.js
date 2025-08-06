@@ -438,3 +438,156 @@ export const searchArtworks = async (req, res) => {
     });
   }
 };
+
+// Save/Unsave artwork
+export const toggleSaveArtwork = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const artwork = await Artwork.findById(id);
+    
+    if (!artwork) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Artwork not found" 
+      });
+    }
+
+    const user = await User.findById(userId);
+    const savedIndex = user.savedArtworks.indexOf(id);
+
+    let action;
+    if (savedIndex > -1) {
+      // Remove from saved
+      user.savedArtworks.splice(savedIndex, 1);
+      action = "unsaved";
+    } else {
+      // Add to saved
+      user.savedArtworks.push(id);
+      action = "saved";
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Artwork ${action}`,
+      isSaved: action === "saved"
+    });
+  } catch (error) {
+    console.error("Toggle save artwork error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to toggle save artwork" 
+    });
+  }
+};
+
+// Get user's saved artworks
+export const getSavedArtworks = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const user = await User.findById(userId).populate({
+      path: 'savedArtworks',
+      populate: {
+        path: 'artist',
+        select: 'username profileImage firstName lastName'
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    // Get saved artworks with pagination
+    const savedArtworks = user.savedArtworks.slice(skip, skip + limit);
+    const total = user.savedArtworks.length;
+
+    // Construct full URLs for artwork images
+    const host = req.get('host') || 'localhost:5000';
+    const artworksWithUrls = savedArtworks.map(artwork => ({
+      ...artwork.toObject(),
+      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+    }));
+
+    res.json({
+      success: true,
+      artworks: artworksWithUrls,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalArtworks: total,
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error("Get saved artworks error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch saved artworks" 
+    });
+  }
+};
+
+// Get user's posted artworks
+export const getPostedArtworks = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+    const isPublic = req.query.isPublic; // New filter parameter
+
+    let query = { artist: userId };
+    
+    // Add isPublic filter if provided
+    if (isPublic !== undefined) {
+      query.isPublic = isPublic === 'true';
+    }
+
+    const artworks = await Artwork.find(query)
+      .populate('artist', 'username profileImage firstName lastName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Construct full URLs for artwork images
+    const host = req.get('host') || 'localhost:5000';
+    const artworksWithUrls = artworks.map(artwork => ({
+      ...artwork,
+      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+    }));
+
+    const total = await Artwork.countDocuments(query);
+
+    res.json({
+      success: true,
+      artworks: artworksWithUrls,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalArtworks: total,
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error("Get posted artworks error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch posted artworks" 
+    });
+  }
+};

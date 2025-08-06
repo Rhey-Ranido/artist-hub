@@ -4,7 +4,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,10 +16,11 @@ import {
   MessageCircle,
   Eye
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Search = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [artworks, setArtworks] = useState([]);
   const [users, setUsers] = useState([]);
@@ -28,6 +28,8 @@ const Search = () => {
   const [artworksLoading, setArtworksLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('artworks');
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const searchQuery = searchParams.get('q');
@@ -87,12 +89,12 @@ const Search = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (query.trim()) {
-      setSearchParams({ q: query.trim() });
-      handleSearch(query.trim());
+  const handleMessageUser = (userId, username) => {
+    if (!user) {
+      navigate('/login');
+      return;
     }
+    navigate(`/messages?user=${userId}&username=${encodeURIComponent(username)}`);
   };
 
   const formatTimeAgo = (dateString) => {
@@ -115,23 +117,12 @@ const Search = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Search</h1>
-          
-          <form onSubmit={handleSubmit} className="flex gap-4 max-w-2xl">
-            <Input
-              placeholder="Search for artworks, users, or tags..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <SearchIcon className="h-4 w-4" />
-              )}
-            </Button>
-          </form>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Search Results</h1>
+          {query && (
+            <p className="text-gray-600">
+              Showing results for "{query}"
+            </p>
+          )}
         </div>
 
         {/* Search Results */}
@@ -292,7 +283,7 @@ const Search = () => {
                           </p>
                         )}
 
-                        <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                        <div className="grid grid-cols-3 gap-4 text-center text-sm mb-4">
                           <div>
                             <div className="font-semibold">{user.artworksCount || 0}</div>
                             <div className="text-gray-500">Artworks</div>
@@ -308,6 +299,18 @@ const Search = () => {
                             <div className="text-gray-500">Connections</div>
                           </div>
                         </div>
+
+                        {/* Message Button */}
+                        {user && user.id !== user._id && (
+                          <Button
+                            onClick={() => handleMessageUser(user._id, user.username)}
+                            className="w-full"
+                            size="sm"
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Message
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   ))}

@@ -1,0 +1,36 @@
+import React from 'react';
+
+const Avatar = ({ className = '', children, ...props }) => {
+  return (
+    <div 
+      className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+const AvatarImage = ({ src, alt = '', className = '', ...props }) => {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`aspect-square h-full w-full object-cover ${className}`}
+      {...props}
+    />
+  );
+};
+
+const AvatarFallback = ({ className = '', children, ...props }) => {
+  return (
+    <div
+      className={`flex h-full w-full items-center justify-center rounded-full bg-gray-100 ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+export { Avatar, AvatarImage, AvatarFallback }; 

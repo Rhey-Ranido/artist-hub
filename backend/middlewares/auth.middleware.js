@@ -30,6 +30,30 @@ export const protect = (req, res, next) => {
   }
 };
 
+// Optional authentication - sets req.user if token is provided but doesn't require it
+export const optionalAuth = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = {
+      _id: decoded.id,
+      id: decoded.id,
+      role: decoded.role,
+    };
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    req.user = null;
+    next();
+  }
+};
+
 // Alias for backward compatibility and cleaner naming
 export const authenticateToken = protect;
 

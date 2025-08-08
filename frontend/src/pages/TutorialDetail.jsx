@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Calendar, ArrowLeft, Heart, Tag, BookOpen, Palette } from 'lucide-react';
+import { Loader2, Clock, Calendar, ArrowLeft, Heart, Tag, BookOpen, Palette, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import LevelUpModal from '../components/LevelUpModal';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -20,13 +21,27 @@ const TutorialDetail = () => {
   const [isReacting, setIsReacting] = useState(false);
   const [reactionsCount, setReactionsCount] = useState(0);
   const [isReacted, setIsReacted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpData, setLevelUpData] = useState(null);
 
   useEffect(() => {
     const fetchTutorial = async () => {
       try {
         setLoading(true);
         console.log('Fetching tutorial with ID:', id);
-        const res = await fetch(`${API_BASE_URL}/tutorials/${id}`);
+        
+        // Add authentication headers if user is logged in
+        const token = localStorage.getItem('token');
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const res = await fetch(`${API_BASE_URL}/tutorials/${id}`, {
+          headers
+        });
         
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
@@ -38,6 +53,7 @@ const TutorialDetail = () => {
         setTutorial(data);
         setReactionsCount(data.reactionsCount || 0);
         setIsReacted(data.isReacted || false);
+        setIsCompleted(data.isCompleted || false); // Set isCompleted from fetched data
       } catch (err) {
         console.error('Error fetching tutorial:', err);
         setError(err.message);
@@ -103,6 +119,75 @@ const TutorialDetail = () => {
         tutorialTitle: tutorial.title
       } 
     });
+  };
+
+  const handleCompleteTutorial = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (completing || isCompleted) return; // Prevent execution if already completed
+
+    setCompleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/tutorials/${id}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsCompleted(true);
+        
+        // Show success message
+        if (data.levelUp) {
+          setLevelUpData({
+            newLevel: data.newLevel,
+            levelUpMessage: data.levelUpMessage
+          });
+          setShowLevelUpModal(true);
+          
+          // Update user level in localStorage
+          localStorage.setItem('userLevel', data.newLevel);
+          
+          // Update accessible levels based on new level
+          const levelAccess = {
+            'beginner': ['beginner'],
+            'intermediate': ['beginner', 'intermediate'],
+            'advanced': ['beginner', 'intermediate', 'advanced']
+          };
+          localStorage.setItem('accessibleLevels', JSON.stringify(levelAccess[data.newLevel] || ['beginner']));
+        } else {
+          alert('✅ Tutorial completed successfully!');
+        }
+        
+        console.log('Tutorial completed successfully!', data);
+      } else {
+        const errorData = await response.json();
+        if (errorData.isCompleted) {
+          setIsCompleted(true);
+          alert('This tutorial has already been completed!');
+        } else {
+          alert(errorData.message || 'Failed to complete tutorial');
+        }
+        console.error('Server error:', errorData.message);
+      }
+    } catch (error) {
+      console.error('Error completing tutorial:', error);
+      alert('Failed to complete tutorial. Please try again.');
+    } finally {
+      setCompleting(false);
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -275,19 +360,47 @@ const TutorialDetail = () => {
                 <p className="text-muted-foreground mb-6">
                   Follow along with the tutorial steps while creating your artwork
                 </p>
-                <Button 
-                  onClick={handleCreateArtwork}
-                  size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3"
-                >
-                  <Palette className="h-5 w-5 mr-2" />
-                  Create Artwork from This Tutorial
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    onClick={handleCreateArtwork}
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3"
+                  >
+                    <Palette className="h-5 w-5 mr-2" />
+                    Create Artwork from This Tutorial
+                  </Button>
+                  <Button 
+                    onClick={handleCompleteTutorial}
+                    disabled={isCompleted || completing}
+                    variant={isCompleted ? "outline" : "default"}
+                    size="lg"
+                    className={`px-8 py-3 ${
+                      isCompleted 
+                        ? 'border-green-500 text-green-700 bg-green-50 hover:bg-green-100 cursor-not-allowed opacity-75' 
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                    title={isCompleted ? 'Tutorial already completed' : 'Mark this tutorial as completed'}
+                  >
+                    {completing ? (
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    ) : isCompleted ? (
+                      <Check className="h-5 w-5 mr-2" />
+                    ) : (
+                      <Check className="h-5 w-5 mr-2" />
+                    )}
+                    {isCompleted ? 'Completed' : completing ? 'Marking as Complete...' : 'Mark as Completed'}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+      <LevelUpModal
+        isOpen={showLevelUpModal}
+        onClose={() => setShowLevelUpModal(false)}
+        levelUpData={levelUpData}
+      />
     </div>
   );
 };

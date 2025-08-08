@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Loader2, UserCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { authApi, handleAuthResponse } from '@/utils/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,7 +18,8 @@ const SignupForm = ({ onSignupSuccess }) => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: 'user' // Default role for art studio
+    role: 'user', // Default role for art studio
+    level: 'beginner' // Default level for new users
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -42,10 +43,10 @@ const SignupForm = ({ onSignupSuccess }) => {
     }
   };
 
-  const handleRoleChange = (value) => {
+  const handleLevelChange = (value) => {
     setFormData(prev => ({
       ...prev,
-      role: value
+      level: value
     }));
     if (error) setError('');
   };
@@ -98,7 +99,8 @@ const SignupForm = ({ onSignupSuccess }) => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: formData.role
+        role: formData.role,
+        level: formData.level
       };
 
       const response = await authApi.register(userData);
@@ -118,7 +120,8 @@ const SignupForm = ({ onSignupSuccess }) => {
             confirmPassword: '',
             firstName: '',
             lastName: '', 
-            role: 'user' 
+            role: 'user',
+            level: 'beginner'
           });
 
           // Call success callback
@@ -144,17 +147,6 @@ const SignupForm = ({ onSignupSuccess }) => {
       console.error('Registration error:', err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getRoleDescription = (role) => {
-    switch (role) {
-      case 'user':
-        return 'Create and share digital artworks';
-      case 'admin':
-        return 'Platform administrator';
-      default:
-        return '';
     }
   };
 
@@ -299,25 +291,32 @@ const SignupForm = ({ onSignupSuccess }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Account Type</Label>
-            <Select value={formData.role} onValueChange={handleRoleChange} disabled={isLoading}>
+            <Label htmlFor="level">Level</Label>
+            <Select value={formData.level} onValueChange={handleLevelChange} disabled={isLoading}>
               <SelectTrigger>
-                <SelectValue placeholder="Select your account type" />
+                <SelectValue placeholder="Select your skill level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">
+                <SelectItem value="beginner">
                   <div className="flex items-center gap-2">
-                    <UserCheck className="h-4 w-4" />
                     <div>
-                      <div className="font-medium">Artist</div>
-                      <div className="text-xs text-muted-foreground">Create and share digital artworks</div>
+                      <div className="font-medium">Beginner</div>
+                      <div className="text-xs text-muted-foreground">New to digital art</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="intermediate">
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <div className="font-medium">Intermediate</div>
+                      <div className="text-xs text-muted-foreground">Some experience with digital art</div>
                     </div>
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              {getRoleDescription(formData.role)}
+              Choose your current skill level to get personalized content and recommendations
             </p>
           </div>
 

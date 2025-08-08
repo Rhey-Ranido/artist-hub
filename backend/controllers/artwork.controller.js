@@ -130,10 +130,10 @@ export const getArtworkFeed = async (req, res) => {
 export const getArtworkById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id; // Get user ID if authenticated
     
-    const artwork = await Artwork.findById(id)
-      .populate('artist', 'username profileImage bio')
-      .lean();
+    let artwork = await Artwork.findById(id)
+      .populate('artist', 'username profileImage bio');
 
     if (!artwork) {
       return res.status(404).json({ 
@@ -142,12 +142,29 @@ export const getArtworkById = async (req, res) => {
       });
     }
 
-    // Increment view count
-    await Artwork.findByIdAndUpdate(id, { $inc: { views: 1 } });
+    // Only increment view count if user is authenticated and hasn't viewed this artwork before
+    if (userId) {
+      // Ensure viewedBy array exists
+      if (!artwork.viewedBy) {
+        artwork.viewedBy = [];
+      }
+      
+      const hasViewed = artwork.viewedBy.some(view => view.user.toString() === userId);
+      
+      if (!hasViewed) {
+        // Add user to viewedBy array and increment views count
+        artwork.viewedBy.push({ user: userId, viewedAt: new Date() });
+        artwork.views += 1;
+        await artwork.save();
+      }
+    }
+
+    // Convert to plain object for response
+    const artworkResponse = artwork.toObject();
 
     res.json({
       success: true,
-      artwork
+      artwork: artworkResponse
     });
   } catch (error) {
     console.error("Get artwork error:", error);

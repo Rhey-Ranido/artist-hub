@@ -14,11 +14,13 @@ import {
 
 
 export const register = async (req, res) => {
-  let { username, email, password, role, firstName, lastName } = req.body;
+  let { username, email, password, role, firstName, lastName, level } = req.body;
 
   try {
     // Default role to "user" if not provided
     role = role || "user";
+    // Default level to "beginner" if not provided
+    level = level || "beginner";
 
     // Comprehensive validation
     const validationErrors = {};
@@ -112,6 +114,7 @@ export const register = async (req, res) => {
       email, 
       password, 
       role,
+      level,
       firstName: firstName || '',
       lastName: lastName || ''
     });

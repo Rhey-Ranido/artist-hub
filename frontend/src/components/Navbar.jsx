@@ -283,7 +283,7 @@ const Navbar = () => {
 
                     {/* Dropdown Menu */}
                     {profileDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-background rounded-md shadow-lg border border-border py-1 z-50 animate-in fade-in duration-200">
+                      <div className="absolute top-full right-0 mt-1 w-48 bg-background rounded-md shadow-lg border border-border py-1 z-50 animate-in fade-in duration-200 transform origin-top-right">
                         <button
                           onClick={() => {
                             handleNavigation(`/profile/${user.username}`);
@@ -301,8 +301,10 @@ const Navbar = () => {
                           }}
                           className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors duration-200"
                         >
-                          <Bell className="h-4 w-4 mr-3" />
-                          <span className="flex-1">Notifications</span>
+                          <div className="flex items-center flex-1">
+                            <Bell className="h-4 w-4 mr-3" />
+                            <span>Notifications</span>
+                          </div>
                           {unreadNotifications > 0 && (
                             <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                               {unreadNotifications > 99 ? '99+' : unreadNotifications}

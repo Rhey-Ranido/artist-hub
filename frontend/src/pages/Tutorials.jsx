@@ -5,17 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Search, 
-  Filter, 
   BookOpen, 
-  Clock, 
-  User, 
-  Eye,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  Search
 } from 'lucide-react';
 import TutorialCard from '@/components/TutorialCard';
 
@@ -26,7 +21,6 @@ const Tutorials = () => {
   const navigate = useNavigate();
   const [tutorials, setTutorials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [difficulties, setDifficulties] = useState([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -35,46 +29,50 @@ const Tutorials = () => {
     hasPrevPage: false
   });
 
-  // Get current filters from URL
-  const currentSearch = searchParams.get('search') || '';
-  const currentDifficulty = searchParams.get('difficulty') || 'all';
+  // Get current page and search from URL
   const currentPage = parseInt(searchParams.get('page') || '1');
-
-  useEffect(() => {
-    loadDifficulties();
-  }, []);
+  const currentSearch = searchParams.get('search') || '';
 
   useEffect(() => {
     loadTutorials();
-  }, [currentSearch, currentDifficulty, currentPage]);
-
-  const loadDifficulties = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/tutorials/difficulties`);
-      if (response.ok) {
-        const data = await response.json();
-        setDifficulties(data.difficulties);
-      }
-    } catch (error) {
-      console.error('Error loading difficulties:', error);
-    }
-  };
+  }, [currentPage, currentSearch]);
 
   const loadTutorials = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '12',
-        ...(currentSearch && { search: currentSearch }),
-        ...(currentDifficulty && currentDifficulty !== 'all' && { difficulty: currentDifficulty })
+        limit: '12'
       });
 
-      const response = await fetch(`${API_BASE_URL}/tutorials?${params}`);
+      // Add search parameter if exists
+      if (currentSearch) {
+        params.append('search', currentSearch);
+      }
+
+      // Add authentication headers if user is logged in
+      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Use accessible tutorials endpoint for level-based access
+      const response = await fetch(`${API_BASE_URL}/tutorials/accessible?${params}`, {
+        headers
+      });
       if (response.ok) {
         const data = await response.json();
         setTutorials(data.tutorials);
         setPagination(data.pagination);
+        
+        // Store user level and accessible levels for UI
+        if (data.userLevel) {
+          localStorage.setItem('userLevel', data.userLevel);
+        }
+        if (data.accessibleLevels) {
+          localStorage.setItem('accessibleLevels', JSON.stringify(data.accessibleLevels));
+        }
       } else {
         console.error('Failed to load tutorials');
       }
@@ -92,18 +90,6 @@ const Tutorials = () => {
     
     const newParams = new URLSearchParams();
     if (search) newParams.set('search', search);
-    if (currentDifficulty && currentDifficulty !== 'all') newParams.set('difficulty', currentDifficulty);
-    newParams.set('page', '1');
-    
-    setSearchParams(newParams);
-  };
-
-  const handleFilterChange = (filterType, value) => {
-    const newParams = new URLSearchParams();
-    if (currentSearch) newParams.set('search', currentSearch);
-    if (filterType === 'difficulty') {
-      if (value && value !== 'all') newParams.set('difficulty', value);
-    }
     newParams.set('page', '1');
     
     setSearchParams(newParams);
@@ -112,17 +98,9 @@ const Tutorials = () => {
   const handlePageChange = (page) => {
     const newParams = new URLSearchParams();
     if (currentSearch) newParams.set('search', currentSearch);
-    if (currentDifficulty && currentDifficulty !== 'all') newParams.set('difficulty', currentDifficulty);
     newParams.set('page', page.toString());
-    
     setSearchParams(newParams);
   };
-
-  const clearFilters = () => {
-    setSearchParams({ page: '1' });
-  };
-
-  const hasActiveFilters = currentSearch || (currentDifficulty && currentDifficulty !== 'all');
 
   const handleViewTutorial = (tutorial) => {
     navigate(`/tutorial/${tutorial._id}`);
@@ -140,63 +118,73 @@ const Tutorials = () => {
           <p className="text-muted-foreground text-lg">
             Discover step-by-step guides to improve your artistic skills
           </p>
+          
+          {/* Level Indicator */}
+          {localStorage.getItem('userLevel') && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    className={`capitalize ${
+                      localStorage.getItem('userLevel') === 'beginner' 
+                        ? 'bg-green-100 text-green-800' 
+                        : localStorage.getItem('userLevel') === 'intermediate'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {localStorage.getItem('userLevel')} Level
+                  </Badge>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  You can access: {JSON.parse(localStorage.getItem('accessibleLevels') || '["beginner"]').join(', ')} tutorials
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Complete 5 tutorials of your current level to unlock the next level!
+              </p>
+              
+              {/* Progress Indicator */}
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Progress to next level:</span>
+                  <span>{tutorials.filter(t => t.isCompleted && t.difficulty === localStorage.getItem('userLevel')).length}/5</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.min((tutorials.filter(t => t.isCompleted && t.difficulty === localStorage.getItem('userLevel')).length / 5) * 100, 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Search and Filters */}
+        {/* Search Bar */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              Search & Filter Tutorials
+              Search Tutorials
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSearch} className="space-y-4">
-              {/* Search Bar */}
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    name="search"
-                    placeholder="Search tutorials..."
-                    defaultValue={currentSearch}
-                    className="pl-10"
-                  />
-                </div>
-                <Button type="submit">
-                  Search
-                </Button>
+            <form onSubmit={handleSearch} className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  name="search"
+                  placeholder="Search tutorials by title, description, or content..."
+                  defaultValue={currentSearch}
+                  className="pl-10"
+                />
               </div>
-
-              {/* Filters */}
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <span className="text-sm font-medium">Filters:</span>
-                </div>
-                
-                <Select value={currentDifficulty || 'all'} onValueChange={(value) => handleFilterChange('difficulty', value)}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="All Difficulties" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      All Difficulties
-                    </SelectItem>
-                    {difficulties.map((difficulty) => (
-                      <SelectItem key={difficulty} value={difficulty}>
-                        {difficulty}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters}>
-                    Clear Filters
-                  </Button>
-                )}
-              </div>
+              <Button type="submit">
+                Search
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -210,7 +198,7 @@ const Tutorials = () => {
                 Loading tutorials...
               </span>
             ) : (
-              `Showing ${tutorials.length} of ${pagination.totalTutorials} tutorials`
+              `Showing ${tutorials.length} of ${pagination.totalTutorials} tutorials${currentSearch ? ` for "${currentSearch}"` : ''}`
             )}
           </p>
         </div>
@@ -298,16 +286,11 @@ const Tutorials = () => {
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No tutorials found</h3>
               <p className="text-muted-foreground text-center mb-4">
-                {hasActiveFilters 
-                  ? "Try adjusting your search or filters to find more tutorials."
+                {currentSearch 
+                  ? `No tutorials found for "${currentSearch}". Try adjusting your search terms.`
                   : "No tutorials are available at the moment."
                 }
               </p>
-              {hasActiveFilters && (
-                <Button onClick={clearFilters}>
-                  Clear Filters
-                </Button>
-              )}
             </CardContent>
           </Card>
         )}

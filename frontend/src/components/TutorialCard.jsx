@@ -10,7 +10,8 @@ import {
   Tag,
   Image,
   Eye,
-  EyeOff
+  EyeOff,
+  Check
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -144,14 +145,24 @@ const TutorialCard = ({ tutorial, onView, onEdit, onDelete, onToggleStatus, isAd
             {tutorial.difficulty}
           </Badge>
         </div>
-        {/* Draft badge if not published */}
-        {!tutorial.isPublished && (
-          <div className="absolute top-3 right-3">
+        
+        {/* Right side badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1">
+          {/* Completion status indicator */}
+          {tutorial.isCompleted && (
+            <Badge className="bg-green-500 text-white">
+              <Check className="h-3 w-3 mr-1" />
+              Completed
+            </Badge>
+          )}
+          
+          {/* Draft badge if not published */}
+          {!tutorial.isPublished && (
             <Badge variant="secondary">
               Draft
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Content Section */}

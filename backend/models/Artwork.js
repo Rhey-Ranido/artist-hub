@@ -48,6 +48,10 @@ const artworkSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    viewedBy: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      viewedAt: { type: Date, default: Date.now }
+    }],
     isPublic: {
       type: Boolean,
       default: true,

@@ -211,12 +211,25 @@ const Profile = () => {
 
               {/* Badges */}
               <div className="flex gap-2">
-                <Badge variant={profileUser.isVerified ? 'default' : 'secondary'}>
-                  {profileUser.isVerified ? 'Verified' : 'Unverified'}
-                </Badge>
-                <Badge variant="outline" className="capitalize">
-                  {profileUser.role}
-                </Badge>
+                {profileUser.isVerified && (
+                  <Badge variant="default">
+                    Verified
+                  </Badge>
+                )}
+                {profileUser.level && (
+                  <Badge 
+                    variant="outline" 
+                    className={`capitalize ${
+                      profileUser.level === 'beginner' 
+                        ? 'border-green-500 text-green-700 bg-green-50' 
+                        : profileUser.level === 'intermediate'
+                        ? 'border-yellow-500 text-yellow-700 bg-yellow-50'
+                        : 'border-red-500 text-red-700 bg-red-50'
+                    }`}
+                  >
+                    {profileUser.level}
+                  </Badge>
+                )}
                 {profileUser.role === 'provider' && (
                   <Badge variant="default" className="bg-green-500 hover:bg-green-600">
                     Provider

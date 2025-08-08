@@ -55,7 +55,17 @@ const ArtworkDetails = () => {
   const fetchArtwork = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/artworks/${id}`);
+      const token = localStorage.getItem('token');
+      const headers = {};
+      
+      // Add authorization header if user is logged in
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/artworks/${id}`, {
+        headers
+      });
       const data = await response.json();
 
       if (!response.ok) {

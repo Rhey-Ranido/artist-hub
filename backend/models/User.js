@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    level: {
+      type: String,
+      enum: ["beginner", "intermediate", "advanced"],
+      default: "beginner",
+    },
     firstName: {
       type: String,
       required: false,
@@ -48,6 +53,7 @@ const userSchema = new mongoose.Schema(
     artworksCount: { type: Number, default: 0 },
     likesReceived: { type: Number, default: 0 },
     savedArtworks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Artwork" }],
+    completedTutorials: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tutorial" }],
     isVerified: {
       type: Boolean,
       default: false,

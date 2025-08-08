@@ -7,11 +7,6 @@ const ArtworkFeed = ({ artworks = [] }) => {
   const [savedArtworks, setSavedArtworks] = useState(new Set());
   const [saveLoading, setSaveLoading] = useState(new Set());
 
-  // Debug: Log the first artwork to see its structure
-  if (artworks.length > 0) {
-    console.log('ArtworkFeed - First artwork structure:', artworks[0]);
-  }
-
   // formatting helpers moved to shared components
 
   const handleSaveArtwork = async (artworkId, event) => {

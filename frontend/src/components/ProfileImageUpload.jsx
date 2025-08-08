@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload, User, Loader2, Camera, Trash2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProfileImageUpload = ({ 
   type = 'user', // 'user' or 'provider'
@@ -13,6 +14,7 @@ const ProfileImageUpload = ({
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentImageUrl);
   const [error, setError] = useState('');
+  const { updateUser } = useAuth();
   
   // You'll need to implement auth store or get token from context/props
   const getAuthToken = () => {
@@ -98,6 +100,10 @@ const ProfileImageUpload = ({
 
       if (imageUrl) {
         setPreviewUrl(imageUrl);
+        // Update user data in AuthContext
+        if (type === 'user') {
+          updateUser({ profileImage: data.profileImage || data.user?.profileImage });
+        }
         // Notify parent component
         if (onImageUpdate) {
           onImageUpdate(imageUrl);
@@ -106,11 +112,15 @@ const ProfileImageUpload = ({
         // Fallback: construct URL from profileImage path
         const profileImage = type === 'provider' 
           ? data.provider?.profileImage
-          : data.user?.profileImage;
+          : data.user?.profileImage || data.profileImage;
         
-            if (profileImage) {
-      const fallbackUrl = `http://localhost:5000/uploads/${profileImage}`;
+        if (profileImage) {
+          const fallbackUrl = `http://localhost:5000${profileImage}`;
           setPreviewUrl(fallbackUrl);
+          // Update user data in AuthContext
+          if (type === 'user') {
+            updateUser({ profileImage });
+          }
           if (onImageUpdate) {
             onImageUpdate(fallbackUrl);
           }

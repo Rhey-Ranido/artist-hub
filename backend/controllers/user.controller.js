@@ -40,22 +40,34 @@ export const getUserProfile = async (req, res) => {
     // Construct full profile image URL with explicit port
     const host = req.get('host') || 'localhost:5000';
     const profileImageUrl = user.profileImage
-      ? `${req.protocol}://${host}${user.profileImage}`
+      ? `${req.protocol}://${host}/uploads/${user.profileImage}`
       : null;
 
-    console.log('Profile Image Debug:', {
-      profileImage: user.profileImage,
-      profileImageUrl: profileImageUrl,
-      protocol: req.protocol,
-      host: req.get('host')
-    });
+    // Construct profile image URLs for followers and following
+    const constructProfileImageUrl = (profileImage) => {
+      if (!profileImage) return null;
+      return profileImage.startsWith('http') ? profileImage : `${req.protocol}://${host}/uploads/${profileImage}`;
+    };
+
+    // Add profile image URLs to followers and following
+    const followersWithUrls = user.followers?.map(follower => ({
+      ...follower.toObject(),
+      profileImageUrl: constructProfileImageUrl(follower.profileImage)
+    })) || [];
+
+    const followingWithUrls = user.following?.map(following => ({
+      ...following.toObject(),
+      profileImageUrl: constructProfileImageUrl(following.profileImage)
+    })) || [];
 
     res.json({
       success: true,
       user: {
         ...user.toObject(),
         profileImageUrl,
-        publicArtworksCount
+        publicArtworksCount,
+        followers: followersWithUrls,
+        following: followingWithUrls
       }
     });
   } catch (error) {

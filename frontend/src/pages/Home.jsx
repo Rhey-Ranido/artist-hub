@@ -31,7 +31,6 @@ export default function Home() {
       }
 
       const data = await response.json();
-      console.log('Homepage Artwork Feed Data:', data);
       setArtworks(data.artworks || []);
     } catch (error) {
       console.error('Error fetching artwork feed:', error);

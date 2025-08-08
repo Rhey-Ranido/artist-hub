@@ -48,9 +48,8 @@ const Profile = () => {
       if (!userResponse.ok) {
         throw new Error('User not found');
       }
-             const userData = await userResponse.json();
-       console.log('Profile User Data:', userData.user);
-       setProfileUser(userData.user);
+      const userData = await userResponse.json();
+      setProfileUser(userData.user);
 
       // Fetch user's artworks
       const artworksResponse = await fetch(`${API_BASE_URL}/artworks/user/${username}`);
@@ -125,22 +124,20 @@ const Profile = () => {
             {/* Profile Image */}
             <div className="flex-shrink-0">
               <div className="relative">
-                                 {profileUser.profileImageUrl || profileUser.profileImage ? (
-                   <img
-                     src={profileUser.profileImageUrl || `http://localhost:5000/uploads/${profileUser.profileImage}`}
-                     alt={`${profileUser.firstName} ${profileUser.lastName}`}
-                     className="w-32 h-32 rounded-full object-cover border-4 border-background shadow-lg"
-                     onError={(e) => {
-                       console.log('Profile image error:', e.target.src);
-                       console.log('Profile user data:', profileUser);
-                       e.target.style.display = 'none';
-                       e.target.nextSibling.style.display = 'flex';
-                     }}
-                     onLoad={() => {
-                       console.log('Profile image loaded successfully:', profileUser.profileImageUrl || profileUser.profileImage);
-                     }}
-                   />
-                 ) : null}
+                                                 {profileUser.profileImageUrl || profileUser.profileImage ? (
+                  <img
+                    src={profileUser.profileImageUrl || `http://localhost:5000${profileUser.profileImage}`}
+                    alt={`${profileUser.firstName} ${profileUser.lastName}`}
+                    className="w-32 h-32 rounded-full object-cover border-4 border-background shadow-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                    onLoad={() => {
+                      // Image loaded successfully
+                    }}
+                  />
+                ) : null}
                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-4 border-background shadow-lg" style={{ display: profileUser.profileImageUrl || profileUser.profileImage ? 'none' : 'flex' }}>
                    <User className="h-16 w-16 text-gray-400" />
                  </div>

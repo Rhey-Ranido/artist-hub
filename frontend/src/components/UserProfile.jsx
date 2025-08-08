@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, MessageCircle, Eye, UserPlus, UserMinus, Settings, Loader2, Calendar, MapPin, Palette } from 'lucide-react';
+import { Heart, MessageCircle, Eye, UserPlus, UserMinus, Settings, Loader2, Calendar, MapPin, Palette, Users } from 'lucide-react';
 import ArtworkCard from '@/components/ArtworkCard';
 import { Link, useParams } from 'react-router-dom';
 
@@ -18,6 +18,7 @@ const UserProfile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('artworks');
 
   useEffect(() => {
     // Get current user from localStorage
@@ -151,12 +152,16 @@ const UserProfile = () => {
             <div className="flex flex-col items-center md:items-start">
               <Avatar className="h-32 w-32 mb-4">
                 <img
-                  src={user.profileImage 
-                    ? `http://localhost:5000/uploads/${user.profileImage}` 
+                  src={user.profileImageUrl || (user.profileImage 
+                    ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000${user.profileImage}`)
                     : '/default-avatar.png'
-                  }
+                  )}
                   alt={user.username}
                   className="object-cover"
+                  onError={(e) => {
+                    console.log('Profile image error:', e.target.src);
+                    e.target.src = '/default-avatar.png';
+                  }}
                 />
               </Avatar>
               
@@ -215,11 +220,17 @@ const UserProfile = () => {
                   <div className="font-bold text-lg">{user.artworksCount || 0}</div>
                   <div className="text-sm text-gray-600">Artworks</div>
                 </div>
-                <div className="text-center">
+                <div 
+                  className="text-center cursor-pointer hover:text-blue-600 transition-colors"
+                  onClick={() => setActiveTab('followers')}
+                >
                   <div className="font-bold text-lg">{user.followers?.length || 0}</div>
                   <div className="text-sm text-gray-600">Followers</div>
                 </div>
-                <div className="text-center">
+                <div 
+                  className="text-center cursor-pointer hover:text-blue-600 transition-colors"
+                  onClick={() => setActiveTab('following')}
+                >
                   <div className="font-bold text-lg">{user.following?.length || 0}</div>
                   <div className="text-sm text-gray-600">Following</div>
                 </div>
@@ -240,11 +251,19 @@ const UserProfile = () => {
       </Card>
 
       {/* Content Tabs */}
-      <Tabs defaultValue="artworks" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="artworks">
             <Palette className="h-4 w-4 mr-2" />
             Artworks
+          </TabsTrigger>
+          <TabsTrigger value="followers">
+            <Users className="h-4 w-4 mr-2" />
+            Followers ({user.followers?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="following">
+            <Users className="h-4 w-4 mr-2" />
+            Following ({user.following?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="liked">
             <Heart className="h-4 w-4 mr-2" />
@@ -281,6 +300,72 @@ const UserProfile = () => {
             <Heart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500">Liked artworks feature coming soon</p>
           </div>
+        </TabsContent>
+
+        <TabsContent value="followers" className="space-y-6">
+          {user.followers?.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500">No followers yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {user.followers?.map((follower) => (
+                <Card key={follower._id} className="p-4">
+                  <CardContent className="flex items-center space-x-4 p-0">
+                    <Avatar className="h-12 w-12">
+                      <img
+                        src={follower.profileImageUrl || '/default-avatar.png'}
+                        alt={follower.username}
+                        className="object-cover"
+                        onError={(e) => {
+                          e.target.src = '/default-avatar.png';
+                        }}
+                      />
+                    </Avatar>
+                    <div className="flex-1">
+                      <Link to={`/profile/${follower._id}`} className="hover:underline">
+                        <h3 className="font-semibold text-sm">{follower.username}</h3>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="following" className="space-y-6">
+          {user.following?.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500">Not following anyone yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {user.following?.map((following) => (
+                <Card key={following._id} className="p-4">
+                  <CardContent className="flex items-center space-x-4 p-0">
+                    <Avatar className="h-12 w-12">
+                      <img
+                        src={following.profileImageUrl || '/default-avatar.png'}
+                        alt={following.username}
+                        className="object-cover"
+                        onError={(e) => {
+                          e.target.src = '/default-avatar.png';
+                        }}
+                      />
+                    </Avatar>
+                    <div className="flex-1">
+                      <Link to={`/profile/${following._id}`} className="hover:underline">
+                        <h3 className="font-semibold text-sm">{following.username}</h3>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

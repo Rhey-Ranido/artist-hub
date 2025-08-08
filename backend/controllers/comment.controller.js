@@ -194,17 +194,13 @@ export const deleteComment = async (req, res) => {
       });
     }
 
-    // Delete all replies to this comment
+    // Delete all replies to this comment, then the comment itself
     await Comment.deleteMany({ parentComment: id });
-
-    // Delete the comment
     await Comment.findByIdAndDelete(id);
 
-    // Update artwork's comment count
-    const replyCount = await Comment.countDocuments({ parentComment: id });
-    await Artwork.findByIdAndUpdate(comment.artwork, { 
-      $inc: { commentsCount: -(1 + replyCount) } 
-    });
+    // Recalculate and set the accurate commentsCount for the artwork
+    const currentCount = await Comment.countDocuments({ artwork: comment.artwork });
+    await Artwork.findByIdAndUpdate(comment.artwork, { $set: { commentsCount: currentCount } });
 
     res.json({
       success: true,

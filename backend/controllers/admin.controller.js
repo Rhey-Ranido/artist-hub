@@ -594,7 +594,7 @@ export const getUserStatsForAdmin = async (req, res) => {
 
     // Get total likes on user's artworks
     const artworks = await Artwork.find({ artist: id }).select('likes');
-    const totalLikes = artworks.reduce((sum, artwork) => sum + (artwork.likes || 0), 0);
+    const totalLikes = artworks.reduce((sum, artwork) => sum + (Array.isArray(artwork.likes) ? artwork.likes.length : 0), 0);
 
     res.status(200).json({
       artworks: artworksCount,

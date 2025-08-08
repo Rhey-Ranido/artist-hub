@@ -4,18 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Heart, 
-  MessageCircle, 
-  Eye, 
-  UserPlus, 
-  UserMinus,
-  Settings,
-  Loader2,
-  Calendar,
-  MapPin,
-  Palette
-} from 'lucide-react';
+import { Heart, MessageCircle, Eye, UserPlus, UserMinus, Settings, Loader2, Calendar, MapPin, Palette } from 'lucide-react';
+import ArtworkCard from '@/components/ArtworkCard';
 import { Link, useParams } from 'react-router-dom';
 
 const UserProfile = () => {
@@ -280,54 +270,7 @@ const UserProfile = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {artworks.map((artwork) => (
-                <Card key={artwork._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <Link to={`/artwork/${artwork._id}`}>
-                    <div className="aspect-square relative">
-                      <img
-                        src={`http://localhost:5000${artwork.imageUrl}`}
-                        alt={artwork.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="bg-black/50 text-white">
-                          <Eye className="h-3 w-3 mr-1" />
-                          {artwork.views}
-                        </Badge>
-                      </div>
-                    </div>
-                  </Link>
-                  
-                  <CardContent className="p-4">
-                    <Link 
-                      to={`/artwork/${artwork._id}`}
-                      className="font-medium hover:underline line-clamp-1 block mb-2"
-                    >
-                      {artwork.title}
-                    </Link>
-
-                    {artwork.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {artwork.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center">
-                          <Heart className="h-4 w-4 mr-1" />
-                          {artwork.likesCount}
-                        </span>
-                        <span className="flex items-center">
-                          <MessageCircle className="h-4 w-4 mr-1" />
-                          {artwork.commentsCount}
-                        </span>
-                      </div>
-                      <span className="text-gray-500">
-                        {new Date(artwork.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ArtworkCard key={artwork._id} artwork={artwork} />
               ))}
             </div>
           )}

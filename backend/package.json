@@ -9,7 +9,8 @@
     "seed": "node scripts/seedData.js",
     "seed-art": "node scripts/artStudioSeed.js",
     "seed-tutorials": "node scripts/seedTutorials.js",
-    "update-ratings": "node scripts/updateRatings.js"
+    "update-ratings": "node scripts/updateRatings.js",
+    "sync-counts": "node scripts/syncCounts.js"
   },
   "author": "rhey ranido",
   "license": "ISC",

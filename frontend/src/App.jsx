@@ -13,6 +13,9 @@ import UserSettings from "./pages/UserSettings";
 import Messages from "./pages/Messages";
 import Search from "./pages/Search";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUserDetail from "./pages/AdminUserDetail";
+import AdminArtworkDetail from "./pages/AdminArtworkDetail";
+import AdminTutorialDetail from "./pages/AdminTutorialDetail";
 import MyArtworks from "./pages/MyArtworks";
 
 function App() {
@@ -32,6 +35,9 @@ function App() {
             <Route path="/messages" element={<Messages />} />
             <Route path="/search" element={<Search />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/user/:id" element={<AdminUserDetail />} />
+            <Route path="/admin/artwork/:id" element={<AdminArtworkDetail />} />
+            <Route path="/admin/tutorial/:id" element={<AdminTutorialDetail />} />
             <Route path="/my-artworks" element={<MyArtworks />} />
           </Routes>
         </Router>

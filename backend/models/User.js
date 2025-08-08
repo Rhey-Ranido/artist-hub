@@ -52,6 +52,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    suspensionReason: {
+      type: String,
+      default: "",
+    },
+    statusUpdatedAt: {
+      type: Date,
+      default: Date.now,
+    },
     lastActive: {
       type: Date,
       default: Date.now,

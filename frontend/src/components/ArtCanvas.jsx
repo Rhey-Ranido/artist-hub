@@ -21,22 +21,25 @@ import {
   PenTool,
   Paintbrush,
   Airplay,
-  Droplets
+  Droplets,
+  Grid3X3
 } from 'lucide-react';
 
 const ArtCanvas = ({ onSave, initialData = null }) => {
   const canvasRef = useRef(null);
+  const gridCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('brush');
   const [brushType, setBrushType] = useState('normal'); // normal, pencil, marker, watercolor, spray
   const [brushSize, setBrushSize] = useState(5);
   const [opacity, setOpacity] = useState(100);
-  const [flow, setFlow] = useState(100);
   const [color, setColor] = useState('#000000');
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showGrid, setShowGrid] = useState(false);
+  const [gridSize, setGridSize] = useState(20);
   
   // Artwork metadata
   const [title, setTitle] = useState('');
@@ -54,36 +57,79 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     { id: 'normal', name: 'Normal', icon: Brush, description: 'Standard brush' },
     { id: 'pencil', name: 'Pencil', icon: PenTool, description: 'Hard edge pencil' },
     { id: 'marker', name: 'Marker', icon: Paintbrush, description: 'Soft marker brush' },
-    { id: 'watercolor', name: 'Watercolor', icon: Droplets, description: 'Watercolor effect' },
-    { id: 'spray', name: 'Spray', icon: Airplay, description: 'Airbrush spray' }
+    { id: 'watercolor', name: 'Watercolor', icon: Droplets, description: 'Watercolor effect' }
   ];
+
+  // Grid drawing function for overlay canvas
+  const drawGrid = useCallback(() => {
+    const gridCanvas = gridCanvasRef.current;
+    if (!gridCanvas) return;
+
+    const ctx = gridCanvas.getContext('2d');
+    const width = gridCanvas.width;
+    const height = gridCanvas.height;
+
+    // Always clear the grid canvas first
+    ctx.clearRect(0, 0, width, height);
+    
+    // Only draw grid if showGrid is true
+    if (!showGrid) return;
+    
+    // Set grid style
+    ctx.strokeStyle = '#9CA3AF';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.6;
+
+    // Draw vertical lines
+    for (let x = 0; x <= width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+
+    // Draw horizontal lines
+    for (let y = 0; y <= height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+  }, [showGrid, gridSize]);
 
   // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const gridCanvas = gridCanvasRef.current;
+    if (!canvas || !gridCanvas) return;
 
-    const ctx = canvas.getContext('2d');
+         const ctx = canvas.getContext('2d');
     
-    // Set canvas size
+    // Set canvas sizes
     canvas.width = 800;
     canvas.height = 600;
+    gridCanvas.width = 800;
+    gridCanvas.height = 600;
     
-    // Set default styles
+    // Set default styles for drawing canvas
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Save initial state
-    saveToHistory();
+    const imageData = canvas.toDataURL();
+    setHistory([imageData]);
+    setHistoryIndex(0);
 
     // Load initial data if provided
     if (initialData) {
       const img = new Image();
       img.onload = () => {
         ctx.drawImage(img, 0, 0);
-        saveToHistory();
+        const newImageData = canvas.toDataURL();
+        setHistory([newImageData]);
+        setHistoryIndex(0);
       };
       img.src = initialData.imageUrl;
       setTitle(initialData.title || '');
@@ -92,6 +138,11 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
       setIsPublic(initialData.isPublic !== false);
     }
   }, [initialData]);
+
+  // Redraw grid when grid settings change
+  useEffect(() => {
+    drawGrid();
+  }, [showGrid, gridSize, drawGrid]);
 
   const saveToHistory = useCallback(() => {
     const canvas = canvasRef.current;
@@ -183,12 +234,6 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
           ctx.strokeStyle = color;
           ctx.globalAlpha = alpha * 0.3;
           break;
-        case 'spray':
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.strokeStyle = color;
-          ctx.globalAlpha = alpha * 0.1;
-          break;
         default: // normal
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
@@ -200,20 +245,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     ctx.lineWidth = brushSize;
   };
 
-  const drawSpray = (ctx, x, y, size) => {
-    const density = Math.floor(size * 2);
-    for (let i = 0; i < density; i++) {
-      const offsetX = (Math.random() - 0.5) * size;
-      const offsetY = (Math.random() - 0.5) * size;
-      const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-      
-      if (distance <= size / 2) {
-        ctx.beginPath();
-        ctx.arc(x + offsetX, y + offsetY, Math.random() * 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  };
+
 
   const startDrawing = (e) => {
     setIsDrawing(true);
@@ -223,12 +255,8 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     
     applyBrushSettings(ctx);
     
-    if (brushType === 'spray') {
-      drawSpray(ctx, pos.x, pos.y, brushSize);
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    }
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
   };
 
   const draw = (e) => {
@@ -240,9 +268,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     
     applyBrushSettings(ctx);
     
-    if (brushType === 'spray') {
-      drawSpray(ctx, pos.x, pos.y, brushSize);
-    } else if (brushType === 'watercolor') {
+    if (brushType === 'watercolor') {
       // Create watercolor effect with multiple overlapping strokes
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
@@ -323,6 +349,25 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
             <CardTitle>Digital Art Canvas</CardTitle>
           </CardHeader>
           <CardContent>
+                         {/* Canvas Container */}
+             <div className="border rounded-lg overflow-hidden bg-white flex justify-center mb-4 relative" style={{ height: '600px', width: '800px' }}>
+               {/* Drawing Canvas */}
+               <canvas
+                 ref={canvasRef}
+                 className="cursor-crosshair absolute top-0 left-0"
+                 onMouseDown={startDrawing}
+                 onMouseMove={draw}
+                 onMouseUp={stopDrawing}
+                 onMouseLeave={stopDrawing}
+               />
+               {/* Grid Overlay Canvas */}
+               <canvas
+                 ref={gridCanvasRef}
+                 className="pointer-events-none absolute top-0 left-0"
+                 style={{ zIndex: 1 }}
+               />
+             </div>
+
             {/* Toolbar */}
             <div className="flex flex-wrap gap-4 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               {/* Tools */}
@@ -365,37 +410,60 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
                 </div>
               )}
 
-              {/* Brush Size */}
-              <div className="flex items-center gap-2">
-                <Label htmlFor="brushSize" className="text-sm">Size:</Label>
-                <Input
-                  id="brushSize"
-                  type="range"
-                  min="1"
-                  max="50"
-                  value={brushSize}
-                  onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                  className="w-20"
-                />
-                <span className="text-sm w-8">{brushSize}</span>
-              </div>
+                             {/* Brush Size */}
+               <div className="flex items-center gap-2">
+                 <Label htmlFor="brushSize" className="text-sm">Size:</Label>
+                 <Input
+                   id="brushSize"
+                   type="number"
+                   min="1"
+                   max="50"
+                   value={brushSize}
+                   onChange={(e) => setBrushSize(parseInt(e.target.value) || 1)}
+                   className="w-16"
+                 />
+               </div>
 
-              {/* Opacity Control */}
-              {tool === 'brush' && (
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="opacity" className="text-sm">Opacity:</Label>
-                  <Input
-                    id="opacity"
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={opacity}
-                    onChange={(e) => setOpacity(parseInt(e.target.value))}
-                    className="w-20"
-                  />
-                  <span className="text-sm w-8">{opacity}%</span>
-                </div>
-              )}
+                             {/* Opacity Control */}
+               <div className="flex items-center gap-2">
+                 <Label htmlFor="opacity" className="text-sm">Opacity:</Label>
+                 <Input
+                   id="opacity"
+                   type="number"
+                   min="1"
+                   max="100"
+                   value={opacity}
+                   onChange={(e) => setOpacity(parseInt(e.target.value) || 1)}
+                   className="w-16"
+                 />
+                 <span className="text-sm">%</span>
+               </div>
+
+              {/* Grid Controls */}
+              <div className="flex items-center gap-2 border-l pl-4">
+                <Button
+                  variant={showGrid ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowGrid(!showGrid)}
+                  title="Toggle Grid Guide"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                                 {showGrid && (
+                   <div className="flex items-center gap-2">
+                     <Label htmlFor="gridSize" className="text-sm">Grid:</Label>
+                     <Input
+                       id="gridSize"
+                       type="number"
+                       min="10"
+                       max="100"
+                       value={gridSize}
+                       onChange={(e) => setGridSize(parseInt(e.target.value) || 10)}
+                       className="w-16"
+                     />
+                   </div>
+                 )}
+              </div>
 
               {/* History Controls */}
               <div className="flex gap-2">
@@ -446,7 +514,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
             </div>
 
             {/* Color Palette */}
-            <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="flex flex-wrap gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Label className="text-sm">Colors:</Label>
               {colors.map((c) => (
                 <button
@@ -463,18 +531,6 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 className="w-8 h-8 rounded border-2 border-gray-300"
-              />
-            </div>
-
-            {/* Canvas */}
-            <div className="border rounded-lg overflow-hidden bg-white">
-              <canvas
-                ref={canvasRef}
-                className="max-w-full h-auto cursor-crosshair"
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
               />
             </div>
           </CardContent>

@@ -56,6 +56,14 @@ const artworkSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    adminNote: {
+      type: String,
+      default: "",
+    },
+    statusUpdatedAt: {
+      type: Date,
+      default: Date.now,
+    },
     dimensions: {
       width: { type: Number, required: true },
       height: { type: Number, required: true },

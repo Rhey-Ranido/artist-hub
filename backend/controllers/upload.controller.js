@@ -4,6 +4,29 @@ import Service from "../models/Service.js";
 import { deleteFile, getFileUrl } from "../utils/uploadConfig.js";
 import path from 'path';
 
+// Upload tutorial step image
+export const uploadTutorialStepImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileName = `tutorials/${req.file.filename}`;
+
+    res.status(200).json({
+      message: 'Tutorial step image uploaded successfully',
+      imageUrl: `/uploads/${fileName}`,
+      fullUrl: getFileUrl(req, fileName)
+    });
+  } catch (error) {
+    if (req.file) {
+      deleteFile(req.file.path);
+    }
+    console.error('Error uploading tutorial step image:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // Upload user profile image
 export const uploadUserProfileImage = async (req, res) => {
   try {

@@ -6,7 +6,8 @@ import {
   uploadProviderProfileImage,
   uploadServiceImages,
   deleteServiceImage,
-  getImageUrls
+  getImageUrls,
+  uploadTutorialStepImage
 } from "../controllers/upload.controller.js";
 
 const router = express.Router();
@@ -25,6 +26,9 @@ router.post("/service/:serviceId", uploadMultiple('service', 5), uploadServiceIm
 
 // Delete service image
 router.delete("/service/:serviceId/image/:imageIndex", deleteServiceImage);
+
+// Tutorial step image upload
+router.post("/tutorials/step", uploadSingle('tutorial', 'image'), uploadTutorialStepImage);
 
 // Utility route (placeholder)
 router.get("/urls/:type/:id", getImageUrls);

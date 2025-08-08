@@ -19,6 +19,7 @@ import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminArtworkDetail from "./pages/AdminArtworkDetail";
 import AdminTutorialDetail from "./pages/AdminTutorialDetail";
 import MyArtworks from "./pages/MyArtworks";
+import Notifications from "./pages/Notifications";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
             <Route path="/admin/artwork/:id" element={<AdminArtworkDetail />} />
             <Route path="/admin/tutorial/:id" element={<AdminTutorialDetail />} />
             <Route path="/my-artworks" element={<MyArtworks />} />
+            <Route path="/notifications" element={<Notifications />} />
           </Routes>
         </Router>
       </DarkModeProvider>

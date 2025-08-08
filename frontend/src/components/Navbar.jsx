@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DarkModeToggle from './DarkModeToggle';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle, BookOpen, GraduationCap } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle, BookOpen, GraduationCap, Bell } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,6 +43,39 @@ const Navbar = () => {
       delete window.debugProfileImage;
       window.removeEventListener('userProfileUpdated', handleProfileUpdate);
     };
+  }, [user]);
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!user) {
+        setUnreadNotifications(0);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/notifications/unread-count', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadNotifications(data.unreadCount);
+        }
+      } catch (error) {
+        console.error('Failed to fetch unread notifications count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    
+    return () => clearInterval(interval);
   }, [user]);
 
   // Handle clicking outside dropdown to close it
@@ -262,6 +296,21 @@ const Navbar = () => {
                         </button>
                         <button
                           onClick={() => {
+                            handleNavigation('/notifications');
+                            setProfileDropdownOpen(false);
+                          }}
+                          className="w-full flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors duration-200"
+                        >
+                          <Bell className="h-4 w-4 mr-3" />
+                          <span className="flex-1">Notifications</span>
+                          {unreadNotifications > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                              {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
                             handleNavigation('/settings');
                             setProfileDropdownOpen(false);
                           }}
@@ -382,6 +431,16 @@ const Navbar = () => {
                   <div className="mt-3 space-y-1">
                     <MobileNavLink href={`/profile/${user.username}`} icon={User}>
                       My Profile
+                    </MobileNavLink>
+                    <MobileNavLink href="/notifications" icon={Bell}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>Notifications</span>
+                        {unreadNotifications > 0 && (
+                          <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                            {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                          </span>
+                        )}
+                      </div>
                     </MobileNavLink>
                     <MobileNavLink href="/settings" icon={Settings}>
                       Settings

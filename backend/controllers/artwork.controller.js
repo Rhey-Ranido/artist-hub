@@ -1,6 +1,7 @@
 import Artwork from "../models/Artwork.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
+import { createNotification } from "./notification.controller.js";
 import fs from "fs";
 import path from "path";
 
@@ -364,6 +365,8 @@ export const toggleLike = async (req, res) => {
     // Update artist's total likes received
     if (action === "liked") {
       await User.findByIdAndUpdate(artwork.artist, { $inc: { likesReceived: 1 } });
+      // Create notification for the artist
+      await createNotification(artwork.artist, userId, artwork._id, "like");
     } else {
       await User.findByIdAndUpdate(artwork.artist, { $inc: { likesReceived: -1 } });
     }

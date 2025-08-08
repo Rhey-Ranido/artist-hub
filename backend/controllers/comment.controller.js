@@ -1,5 +1,6 @@
 import Comment from "../models/Comment.js";
 import Artwork from "../models/Artwork.js";
+import { createNotification } from "./notification.controller.js";
 
 // Create new comment
 export const createComment = async (req, res) => {
@@ -47,6 +48,17 @@ export const createComment = async (req, res) => {
 
     // Update artwork's comment count
     await Artwork.findByIdAndUpdate(artworkId, { $inc: { commentsCount: 1 } });
+
+    // Create notification for the artwork owner
+    const notificationType = parentCommentId ? "reply" : "comment";
+    await createNotification(
+      artwork.artist, 
+      userId, 
+      artworkId, 
+      notificationType, 
+      comment._id,
+      content
+    );
 
     res.status(201).json({
       success: true,

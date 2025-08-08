@@ -214,7 +214,7 @@ const Navbar = () => {
               className="flex items-center space-x-2 text-xl font-bold text-primary hover:text-primary/80 transition-colors"
             >
               <Palette className="h-6 w-6" />
-              <span>ArtStudio</span>
+              <span>Artist Hub</span>
             </button>
           </div>
 

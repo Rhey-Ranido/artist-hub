@@ -35,7 +35,7 @@ const Footer = () => {
               <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center">
                 <Palette className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold">ArtStudio</span>
+              <span className="text-xl font-bold">Artist Hub</span>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
               Discover, create, and share amazing digital art. Connect with talented artists 
@@ -140,7 +140,7 @@ const Footer = () => {
             <div className="space-y-3 text-sm">
               <div className="flex items-center text-gray-300">
                 <Mail className="h-4 w-4 mr-3" />
-                <span>support@artstudio.com</span>
+                <span>support@artisthub.com</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <Phone className="h-4 w-4 mr-3" />
@@ -160,7 +160,7 @@ const Footer = () => {
             
             {/* Copyright */}
             <div className="flex items-center space-x-1 text-sm text-gray-400">
-              <span>© {currentYear} ArtStudio. Made with</span>
+              <span>© {currentYear} Artist Hub. Made with</span>
               <Heart className="h-4 w-4 text-red-500 fill-current" />
               <span>for artists worldwide.</span>
             </div>

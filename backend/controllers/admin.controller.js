@@ -990,4 +990,31 @@ export const deleteTutorial = async (req, res) => {
     console.error("Error deleting tutorial:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+// Update tutorial status (publish/unpublish)
+export const updateTutorialStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPublished } = req.body;
+
+    const tutorial = await Tutorial.findById(id);
+    if (!tutorial) {
+      return res.status(404).json({ message: "Tutorial not found" });
+    }
+
+    tutorial.isPublished = isPublished;
+    await tutorial.save();
+
+    const updatedTutorial = await Tutorial.findById(id)
+      .populate('author', 'username profileImage firstName lastName');
+
+    res.status(200).json({
+      message: `Tutorial ${isPublished ? 'published' : 'unpublished'} successfully`,
+      tutorial: updatedTutorial
+    });
+  } catch (error) {
+    console.error("Error updating tutorial status:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 }; 

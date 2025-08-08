@@ -290,6 +290,9 @@ const AdminDashboard = () => {
       } else if (activeTab === 'artworks') {
         endpoint = `${API_BASE_URL}/admin/artworks/${itemId}/status`;
         body = { isPublic: newStatus === 'public', reason };
+      } else if (activeTab === 'tutorials') {
+        endpoint = `${API_BASE_URL}/admin/tutorials/${itemId}/status`;
+        body = { isPublished: newStatus === 'published' };
       }
 
       const response = await fetch(endpoint, {
@@ -310,9 +313,37 @@ const AdminDashboard = () => {
         await loadUsers();
       } else if (activeTab === 'artworks') {
         await loadArtworks();
+      } else if (activeTab === 'tutorials') {
+        await loadTutorials();
       }
 
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
+  const handleTutorialStatusToggle = async (tutorialId, newStatus) => {
+    try {
+      setActionLoading(tutorialId);
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_BASE_URL}/admin/tutorials/${tutorialId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ isPublished: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update tutorial status');
+      }
+
+      // Reload tutorials
+      await loadTutorials();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -823,6 +854,7 @@ const AdminDashboard = () => {
                                onView={(tutorial) => navigate(`/admin/tutorial/${tutorial._id}`)}
                                 onEdit={(tutorial) => startEditTutorial(tutorial)}
                                onDelete={handleDelete}
+                               onToggleStatus={handleTutorialStatusToggle}
                                isAdmin={true}
                              />
                            ))}

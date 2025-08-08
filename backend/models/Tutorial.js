@@ -47,7 +47,23 @@ const tutorialSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    likes: {
+    reactions: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      type: { 
+        type: String, 
+        enum: ["like", "heart", "star", "bookmark"], 
+        default: "like" 
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
+    reactionsCount: {
       type: Number,
       default: 0,
     },
@@ -88,6 +104,21 @@ const tutorialSchema = new mongoose.Schema(
 
 // Index for better search performance
 tutorialSchema.index({ title: "text", description: "text", tags: "text" });
+
+// Update reactions count when reactions array changes
+tutorialSchema.pre('save', function(next) {
+  this.reactionsCount = this.reactions.length;
+  next();
+});
+
+// Static method to update reaction count
+tutorialSchema.statics.updateReactionCount = async function(tutorialId) {
+  const tutorial = await this.findById(tutorialId);
+  if (tutorial) {
+    tutorial.reactionsCount = tutorial.reactions.length;
+    await tutorial.save();
+  }
+};
 
 export default mongoose.model("Tutorial", tutorialSchema);
 

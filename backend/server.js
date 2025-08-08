@@ -22,6 +22,7 @@ import messageRoutes from "./routes/message.route.js";
 import uploadRoutes from "./routes/upload.route.js";
 import userRoutes from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
+import tutorialRoutes from "./routes/tutorial.route.js";
 
 dotenv.config();
 const app = express();
@@ -83,6 +84,7 @@ mongoose
     app.use("/api/upload", uploadRoutes);
     app.use("/api/users", userRoutes);
     app.use("/api/admin", adminRoutes);
+    app.use("/api/tutorials", tutorialRoutes);
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);

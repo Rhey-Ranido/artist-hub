@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ArtCanvas from '../components/ArtCanvas';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 const Create = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  
+  // Get tutorial data from navigation state
+  const tutorialData = location.state;
+  const tutorialSteps = tutorialData?.tutorialSteps || [];
+  const tutorialTitle = tutorialData?.tutorialTitle;
 
   const handleSave = async (artworkData, imageBlob) => {
     try {
@@ -61,6 +71,22 @@ const Create = () => {
     }
   };
 
+  const nextStep = () => {
+    if (currentStepIndex < tutorialSteps.length - 1) {
+      setCurrentStepIndex(currentStepIndex + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(currentStepIndex - 1);
+    }
+  };
+
+  const sortedSteps = tutorialSteps
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -71,7 +97,86 @@ const Create = () => {
           <p className="text-muted-foreground">
             Use our digital canvas to create your masterpiece and share it with the community.
           </p>
+          {tutorialTitle && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+                <span className="font-semibold text-blue-800">Following Tutorial:</span>
+              </div>
+              <p className="text-blue-700">{tutorialTitle}</p>
+            </div>
+          )}
         </div>
+
+        {/* Tutorial Steps Slider */}
+        {tutorialSteps.length > 0 && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Tutorial Step {currentStepIndex + 1} of {tutorialSteps.length}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={prevStep}
+                    disabled={currentStepIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={nextStep}
+                    disabled={currentStepIndex === tutorialSteps.length - 1}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">
+                    Step {sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}: {sortedSteps[currentStepIndex]?.title}
+                  </h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {sortedSteps[currentStepIndex]?.description}
+                  </p>
+                </div>
+                
+                {sortedSteps[currentStepIndex]?.imageUrl && (
+                  <div className="mt-4">
+                    <img
+                      src={`http://localhost:5000${sortedSteps[currentStepIndex].imageUrl}`}
+                      alt={`Step ${sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}`}
+                      className="w-full max-w-md rounded-lg shadow-md mx-auto"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              {/* Step Indicators */}
+              <div className="flex justify-center gap-2 mt-6">
+                {tutorialSteps.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentStepIndex(index)}
+                    className={`w-3 h-3 rounded-full transition-colors ${
+                      index === currentStepIndex 
+                        ? 'bg-blue-600' 
+                        : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <Alert variant="destructive" className="mb-6">

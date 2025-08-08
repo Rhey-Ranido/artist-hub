@@ -12,6 +12,8 @@ import Profile from "./pages/Profile";
 import UserSettings from "./pages/UserSettings";
 import Messages from "./pages/Messages";
 import Search from "./pages/Search";
+import Tutorials from "./pages/Tutorials";
+import TutorialDetail from "./pages/TutorialDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminArtworkDetail from "./pages/AdminArtworkDetail";
@@ -34,6 +36,8 @@ function App() {
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/tutorials" element={<Tutorials />} />
+            <Route path="/tutorial/:id" element={<TutorialDetail />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/user/:id" element={<AdminUserDetail />} />
             <Route path="/admin/artwork/:id" element={<AdminArtworkDetail />} />

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DarkModeToggle from './DarkModeToggle';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle, BookOpen } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle, BookOpen, GraduationCap } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -202,6 +202,10 @@ const Navbar = () => {
                     <BookOpen className="h-4 w-4 mr-1 inline" />
                     My Artworks
                   </NavLink>
+                  <NavLink href="/tutorials" isActive={isActiveRoute('/tutorials')}>
+                    <GraduationCap className="h-4 w-4 mr-1 inline" />
+                    Tutorials
+                  </NavLink>
                   <NavLink href="/messages" isActive={isActiveRoute('/messages')}>
                     <MessageCircle className="h-4 w-4 mr-1 inline" />
                     Messages
@@ -291,6 +295,10 @@ const Navbar = () => {
                 </>
               ) : (
                 <div className="flex items-center space-x-2">
+                  <NavLink href="/tutorials" isActive={isActiveRoute('/tutorials')}>
+                    <GraduationCap className="h-4 w-4 mr-1 inline" />
+                    Tutorials
+                  </NavLink>
                   <NavLink href="/login" isActive={isActiveRoute('/login')}>
                     Sign In
                   </NavLink>
@@ -333,6 +341,9 @@ const Navbar = () => {
                 </MobileNavLink>
                 <MobileNavLink href="/my-artworks" icon={BookOpen} isActive={isActiveRoute('/my-artworks')}>
                   My Artworks
+                </MobileNavLink>
+                <MobileNavLink href="/tutorials" icon={GraduationCap} isActive={isActiveRoute('/tutorials')}>
+                  Tutorials
                 </MobileNavLink>
                 <MobileNavLink href="/messages" icon={MessageCircle} isActive={isActiveRoute('/messages')}>
                   Messages
@@ -387,6 +398,9 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                <MobileNavLink href="/tutorials" icon={GraduationCap} isActive={isActiveRoute('/tutorials')}>
+                  Tutorials
+                </MobileNavLink>
                 <MobileNavLink href="/login" isActive={isActiveRoute('/login')}>
                   Sign In
                 </MobileNavLink>

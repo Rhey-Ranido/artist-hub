@@ -23,7 +23,8 @@ import {
   createTutorial,
   getAllTutorials,
   updateTutorial,
-  deleteTutorial
+  deleteTutorial,
+  updateTutorialStatus
 } from "../controllers/admin.controller.js";
 import { protect, restrictTo } from "../middlewares/auth.middleware.js";
 
@@ -91,6 +92,7 @@ router.post("/tutorials", tutorialUpload.single('thumbnail'), createTutorial);
 router.get("/tutorials", getAllTutorials);
 router.get("/tutorials/:id", getTutorialDetailsForAdmin);
 router.put("/tutorials/:id", tutorialUpload.single('thumbnail'), updateTutorial);
+router.patch("/tutorials/:id/status", updateTutorialStatus);
 router.delete("/tutorials/:id", deleteTutorial);
 
 export default router; 

@@ -30,6 +30,9 @@ router.delete("/service/:serviceId/image/:imageIndex", deleteServiceImage);
 // Tutorial step image upload
 router.post("/tutorials/step", uploadSingle('tutorial', 'image'), uploadTutorialStepImage);
 
+// Tutorial thumbnail upload
+router.post("/tutorials/thumbnail", uploadSingle('tutorial', 'thumbnail'), uploadTutorialStepImage);
+
 // Utility route (placeholder)
 router.get("/urls/:type/:id", getImageUrls);
 

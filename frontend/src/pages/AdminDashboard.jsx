@@ -79,6 +79,7 @@ const AdminDashboard = () => {
     estimatedTime: 30,
     tags: '',
     materials: '',
+    thumbnail: '',
     isPublished: false,
     steps: []
   });
@@ -254,6 +255,7 @@ const AdminDashboard = () => {
       estimatedTime: tutorial.estimatedTime || 30,
       tags: Array.isArray(tutorial.tags) ? tutorial.tags.join(', ') : (tutorial.tags || ''),
       materials: Array.isArray(tutorial.materials) ? tutorial.materials.join(', ') : (tutorial.materials || ''),
+      thumbnail: tutorial.thumbnail || '',
       isPublished: !!tutorial.isPublished,
       steps: Array.isArray(tutorial.steps) ? tutorial.steps.map((s, idx) => ({
         id: `${Date.now()}-${idx}`,
@@ -425,6 +427,7 @@ const AdminDashboard = () => {
         estimatedTime: 30,
         tags: '',
         materials: '',
+        thumbnail: '',
         isPublished: false,
         steps: []
       });
@@ -465,6 +468,7 @@ const AdminDashboard = () => {
         difficulty: tutorialForm.difficulty,
         estimatedTime: tutorialForm.estimatedTime,
         isPublished: tutorialForm.isPublished,
+        thumbnail: tutorialForm.thumbnail,
         tags: JSON.stringify(tagsArray),
         materials: JSON.stringify(materialsArray),
         steps: JSON.stringify(stepsArray)
@@ -546,6 +550,31 @@ const AdminDashboard = () => {
       updateStep(stepId, 'imageUrl', data.imageUrl);
     } catch (err) {
       setError('Failed to upload image: ' + err.message);
+    }
+  };
+
+  const handleTutorialThumbnailUpload = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('thumbnail', file);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/upload/tutorials/thumbnail`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload thumbnail');
+      }
+
+      const data = await response.json();
+      setTutorialForm({...tutorialForm, thumbnail: data.imageUrl});
+    } catch (err) {
+      setError('Failed to upload thumbnail: ' + err.message);
     }
   };
 
@@ -1087,6 +1116,53 @@ const AdminDashboard = () => {
                     onChange={(e) => setTutorialForm({...tutorialForm, materials: e.target.value})}
                     placeholder="canvas, brushes, paint"
                   />
+                </div>
+
+                {/* Thumbnail Upload */}
+                <div>
+                  <label className="text-sm font-medium">Tutorial Thumbnail</label>
+                  <div className="space-y-2">
+                    {tutorialForm.thumbnail ? (
+                      <div className="relative">
+                        <img 
+                          src={tutorialForm.thumbnail.startsWith('http') ? tutorialForm.thumbnail : `http://localhost:5000${tutorialForm.thumbnail}`}
+                          alt="Tutorial thumbnail"
+                          className="w-full max-w-xs h-32 object-cover rounded-lg"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => setTutorialForm({...tutorialForm, thumbnail: ''})}
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              handleTutorialThumbnailUpload(file);
+                            }
+                          }}
+                          className="hidden"
+                          id="tutorial-thumbnail"
+                        />
+                        <label 
+                          htmlFor="tutorial-thumbnail"
+                          className="text-sm text-gray-600 cursor-pointer hover:text-gray-800"
+                        >
+                          Click to upload thumbnail
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Tutorial Steps */}

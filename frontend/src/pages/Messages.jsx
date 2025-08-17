@@ -20,7 +20,9 @@ import {
   CheckCheck,
   Plus,
   Briefcase,
-  Loader2
+  Loader2,
+  Image,
+  X
 } from 'lucide-react';
 
 const Messages = () => {
@@ -36,6 +38,9 @@ const Messages = () => {
   const [creatingConversation, setCreatingConversation] = useState(false);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   const [socket, setSocket] = useState(null);
   const [typing, setTyping] = useState(false);
@@ -345,8 +350,8 @@ const Messages = () => {
 
   const sendMessage = async () => {
     console.log('🚀 Sending message. selectedChat:', selectedChat?._id, 'newMessage:', newMessage);
-    if (!newMessage.trim()) {
-      console.log('❌ No message content');
+    if (!newMessage.trim() && !selectedImage) {
+      console.log('❌ No message content or image');
       return;
     }
     if (!selectedChat) {
@@ -366,23 +371,46 @@ const Messages = () => {
 
     try {
       setSending(true);
+      setError(''); // Clear any previous errors
       const token = localStorage.getItem('token');
+      
+      let messageData = {
+          chatId: selectedChat._id
+        };
+      
+      // If there's an image, upload it first
+      if (selectedImage) {
+        const imageUrl = await uploadImage();
+        if (!imageUrl) {
+          setError('Failed to upload image');
+          return;
+        }
+        messageData.imageUrl = imageUrl;
+      }
+      
+      // If there's text content, add it
+      if (newMessage.trim()) {
+        messageData.content = newMessage.trim();
+      }
+      
       const response = await fetch(`${API_BASE_URL}/message`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          content: newMessage.trim(),
-          chatId: selectedChat._id
-        })
+        body: JSON.stringify(messageData)
       });
 
       if (response.ok) {
         const newMsg = await response.json();
-        console.log('📤 Message sent successfully:', newMsg.content);
+        console.log('📤 Message sent successfully:', newMsg.content || 'Image message');
         setNewMessage('');
+        
+        // Clear image selection if present
+        if (selectedImage) {
+          removeSelectedImage();
+        }
         
         // Add message locally as fallback in case socket event doesn't arrive
         setMessages(prevMessages => {
@@ -408,6 +436,127 @@ const Messages = () => {
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+      
+      setError(''); // Clear any previous errors
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (document.getElementById('imageInput')) {
+      document.getElementById('imageInput').value = '';
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!selectedImage) return null;
+    
+    try {
+      setUploadLoading(true);
+      setError(''); // Clear any previous errors
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      
+      const response = await fetch(`${API_BASE_URL}/upload/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return result.imageUrl;
+      } else {
+        throw new Error('Failed to upload image');
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      setError('Failed to upload image');
+      return null;
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const sendImageMessage = async () => {
+    if (!selectedImage || !selectedChat) return;
+    
+    try {
+      setSending(true);
+      setError(''); // Clear any previous errors
+      const imageUrl = await uploadImage();
+      
+      if (!imageUrl) {
+        setError('Failed to upload image');
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/message`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          imageUrl: imageUrl,
+          chatId: selectedChat._id
+        })
+      });
+      
+      if (response.ok) {
+        const newMsg = await response.json();
+        console.log('📤 Image message sent successfully');
+        
+        // Add message locally
+        setMessages(prevMessages => {
+          const messageExists = prevMessages.some(msg => msg._id === newMsg._id);
+          if (messageExists) {
+            return prevMessages;
+          }
+          return [...prevMessages, newMsg];
+        });
+        
+        // Update chat list with latest message
+        setChats(prev => prev.map(chat => 
+          chat._id === selectedChat._id 
+            ? { ...chat, latestMessage: newMsg, updatedAt: newMsg.createdAt }
+            : chat
+        ));
+        
+        // Clear image selection
+        removeSelectedImage();
+      } else {
+        throw new Error('Failed to send image message');
+      }
+    } catch (err) {
+      console.error('Error sending image message:', err);
+      setError('Failed to send image message');
     } finally {
       setSending(false);
     }
@@ -543,7 +692,11 @@ const Messages = () => {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      if (selectedImage) {
+        sendImageMessage();
+      } else {
+        sendMessage();
+      }
     }
   };
 
@@ -715,7 +868,14 @@ const Messages = () => {
                             </div>
                             
                             <p className="text-sm text-gray-600 truncate mb-2">
-                              {chat.latestMessage?.content || 'No messages yet'}
+                              {chat.latestMessage?.imageUrl ? (
+                                <span className="flex items-center">
+                                  <Image className="h-3 w-3 mr-1" />
+                                  Image
+                                </span>
+                              ) : (
+                                chat.latestMessage?.content || 'No messages yet'
+                              )}
                             </p>
                             
                             {/* Status indicators */}
@@ -816,7 +976,14 @@ const Messages = () => {
                                     </p>
                                   </div>
                                   <p className="text-sm text-gray-500 truncate">
-                                    {chat.latestMessage?.content || 'No messages yet'}
+                                    {chat.latestMessage?.imageUrl ? (
+                                      <span className="flex items-center">
+                                        <Image className="h-3 w-3 mr-1" />
+                                        Image
+                                      </span>
+                                    ) : (
+                                      chat.latestMessage?.content || 'No messages yet'
+                                    )}
                                   </p>
                                 </div>
                               </div>
@@ -894,7 +1061,19 @@ const Messages = () => {
                                 ? 'bg-primary text-primary-foreground' 
                                 : 'bg-white text-gray-900 border'
                             }`}>
-                              <p className="text-sm">{message.content}</p>
+                              {message.imageUrl ? (
+                                <div className="mb-2">
+                                  <img 
+                                    src={message.imageUrl} 
+                                    alt="Chat image" 
+                                    className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(message.imageUrl, '_blank')}
+                                  />
+                                </div>
+                              ) : null}
+                              {message.content && (
+                                <p className="text-sm">{message.content}</p>
+                              )}
                               <div className={`flex items-center justify-end mt-1 space-x-1 ${
                                 isOwnMessage ? 'text-primary-foreground/70' : 'text-gray-500'
                               }`}>
@@ -932,26 +1111,75 @@ const Messages = () => {
                   {/* Message Input - Fixed at bottom on mobile, normal on desktop */}
                   <div className="p-2 sm:p-4 border-t border-gray-200 bg-white sm:flex-shrink-0 fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto">
                     {selectedChat ? (
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          placeholder="Type a message..."
-                          value={newMessage}
-                          onChange={handleTyping}
-                          onKeyPress={handleKeyPress}
-                          className="flex-1"
-                          disabled={sending}
-                        />
-                        <Button 
-                          onClick={sendMessage} 
-                          disabled={!newMessage.trim() || sending}
-                          size="sm"
-                        >
-                          {sending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
+                      <div className="space-y-3">
+                        {/* Image Preview */}
+                        {imagePreview && (
+                          <div className="relative inline-block">
+                            <img 
+                              src={imagePreview} 
+                              alt="Preview" 
+                              className="max-h-20 rounded-lg border"
+                            />
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                              onClick={removeSelectedImage}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {/* Input Row */}
+                        <div className="flex items-center space-x-2">
+                          {/* Hidden file input */}
+                          <input
+                            id="imageInput"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageSelect}
+                            className="hidden"
+                          />
+                          
+                          {/* Image upload button */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById('imageInput').click()}
+                            disabled={sending || uploadLoading}
+                            className="flex-shrink-0"
+                          >
+                            <Image className="h-4 w-4" />
+                          </Button>
+                          
+                          {/* Text input */}
+                          <Input
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={handleTyping}
+                            onKeyPress={handleKeyPress}
+                            className="flex-1"
+                            disabled={sending}
+                          />
+                          
+                          {/* Send button */}
+                          <Button 
+                            onClick={selectedImage ? sendImageMessage : sendMessage} 
+                            disabled={(!newMessage.trim() && !selectedImage) || sending || uploadLoading}
+                            size="sm"
+                            className="min-w-[80px]"
+                          >
+                            {sending || uploadLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : selectedImage ? (
+                              'Send Image'
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center py-4 text-gray-500">

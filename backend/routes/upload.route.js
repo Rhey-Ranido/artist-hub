@@ -7,7 +7,8 @@ import {
   uploadServiceImages,
   deleteServiceImage,
   getImageUrls,
-  uploadTutorialStepImage
+  uploadTutorialStepImage,
+  uploadChatImage
 } from "../controllers/upload.controller.js";
 
 const router = express.Router();
@@ -32,6 +33,9 @@ router.post("/tutorials/step", uploadSingle('tutorial', 'image'), uploadTutorial
 
 // Tutorial thumbnail upload
 router.post("/tutorials/thumbnail", uploadSingle('tutorial', 'thumbnail'), uploadTutorialStepImage);
+
+// Chat image upload
+router.post("/chat", uploadSingle('chat', 'image'), uploadChatImage);
 
 // Utility route (placeholder)
 router.get("/urls/:type/:id", getImageUrls);

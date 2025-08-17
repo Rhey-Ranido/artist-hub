@@ -256,4 +256,28 @@ export const getImageUrls = (req, res) => {
     console.error('Error getting image URLs:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+};
+
+// Upload chat image
+export const uploadChatImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileName = `chat/${req.file.filename}`;
+    const fullUrl = `http://localhost:5000/uploads/${fileName}`;
+
+    res.status(200).json({
+      message: 'Chat image uploaded successfully',
+      imageUrl: fullUrl,
+      fullUrl: fullUrl
+    });
+  } catch (error) {
+    if (req.file) {
+      deleteFile(req.file.path);
+    }
+    console.error('Error uploading chat image:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 }; 

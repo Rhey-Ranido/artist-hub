@@ -38,13 +38,13 @@ export const allMessages = async (req, res) => {
 };
 
 export const sendMessage = async (req, res) => {
-  const { content, chatId } = req.body;
+  const { content, imageUrl, chatId } = req.body;
 
-  if (!content || !chatId) {
+  if ((!content && !imageUrl) || !chatId) {
     return res.status(400).json({ 
       message: "Invalid data",
       errors: {
-        content: !content ? "Message content is required" : null,
+        content: (!content && !imageUrl) ? "Message content or image is required" : null,
         chatId: !chatId ? "Chat ID is required" : null
       }
     });
@@ -63,7 +63,8 @@ export const sendMessage = async (req, res) => {
 
     let message = await Message.create({
       sender: req.user._id,
-      content: content.trim(),
+      content: content ? content.trim() : undefined,
+      imageUrl: imageUrl || undefined,
       chat: chatId,
     });
 
@@ -88,7 +89,7 @@ export const sendMessage = async (req, res) => {
 
     // Emit socket event for real-time messaging
     if (req.io) {
-      console.log(`📤 Broadcasting message to chat ${chatId}:`, message.content);
+      console.log(`📤 Broadcasting message to chat ${chatId}:`, message.content || 'Image message');
       console.log(`📤 Message sender: ${message.sender._id}, Message ID: ${message._id}`);
       
       // Get the room and emit to all users in the chat

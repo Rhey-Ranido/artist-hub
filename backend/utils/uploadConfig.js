@@ -21,6 +21,8 @@ const storage = multer.diskStorage({
       uploadPath += 'services/';
     } else if (req.uploadType === 'tutorial') {
       uploadPath += 'tutorials/';
+    } else if (req.uploadType === 'chat') {
+      uploadPath += 'chat/';
     } else {
       uploadPath += 'misc/';
     }

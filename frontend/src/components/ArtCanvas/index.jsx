@@ -53,6 +53,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeHandle, setResizeHandle] = useState(null);
+  const [hoveredHandle, setHoveredHandle] = useState(null); // Track which handle is being hovered
   const [originalShapes, setOriginalShapes] = useState([]); // Store original shapes before transformation
   
   // Transformation history for undo/redo of shape operations
@@ -451,18 +452,35 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
           }
         }
         
-        // Draw resize handles
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#0066FF';
-        const handles = getShapeHandles(shape);
-        handles.forEach(handle => {
-          ctx.beginPath();
-          ctx.arc(handle.x, handle.y, 4, 0, 2 * Math.PI);
-          ctx.fill();
-        });
+                 // Draw resize handles with enhanced visibility and hover effects
+         ctx.setLineDash([]);
+         ctx.fillStyle = '#0066FF';
+         ctx.strokeStyle = '#FFFFFF';
+         ctx.lineWidth = 2;
+         const handles = getShapeHandles(shape);
+         handles.forEach(handle => {
+           // Check if this handle is being hovered
+           const isHovered = hoveredHandle === handle.type;
+           const handleSize = isHovered ? 8 : 5; // Bigger when hovered
+           
+           ctx.beginPath();
+           ctx.arc(handle.x, handle.y, handleSize, 0, 2 * Math.PI);
+           ctx.fill();
+           ctx.stroke();
+           
+           // Add glow effect for hovered handles
+           if (isHovered) {
+             ctx.shadowColor = 'rgba(0, 102, 255, 0.6)';
+             ctx.shadowBlur = 8;
+             ctx.beginPath();
+             ctx.arc(handle.x, handle.y, handleSize + 2, 0, 2 * Math.PI);
+             ctx.stroke();
+             ctx.shadowBlur = 0; // Reset shadow
+           }
+         });
       }
     });
-  }, [shapes, selectedShape]);
+  }, [shapes, selectedShape, hoveredHandle]);
 
   // Render shapes when they change
   useEffect(() => {
@@ -1095,6 +1113,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     setSelectedShape(null);
     setIsDragging(false);
     setIsResizing(false);
+    setHoveredHandle(null); // Clear hovered handle when clearing selection
   };
 
   const isPointInShape = (point, shape) => {
@@ -1133,15 +1152,20 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
       }
       case 'triangle': {
         // Check if point is inside triangle using barycentric coordinates
-        const centerX = shape.x + shape.width / 2;
-        const centerY = shape.y + shape.height / 2;
+        const topX = shape.x + shape.width / 2;
+        const topY = shape.y;
+        const leftX = shape.x;
+        const leftY = shape.y + shape.height;
+        const rightX = shape.x + shape.width;
+        const rightY = shape.y + shape.height;
         
-        const v0x = centerX - shape.x;
-        const v0y = centerY - shape.y;
-        const v1x = shape.x + shape.width - shape.x;
-        const v1y = shape.y + shape.height - shape.y;
-        const v2x = point.x - shape.x;
-        const v2y = point.y - shape.y;
+        // Barycentric coordinates calculation
+        const v0x = leftX - topX;
+        const v0y = leftY - topY;
+        const v1x = rightX - topX;
+        const v1y = rightY - topY;
+        const v2x = point.x - topX;
+        const v2y = point.y - topY;
         
         const dot00 = v0x * v0x + v0y * v0y;
         const dot01 = v0x * v1x + v0y * v1y;
@@ -1210,7 +1234,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
   };
 
   const getResizeHandle = (point, shape) => {
-    const handleSize = 8;
+    const handleSize = 10; // Increased handle size for better usability
     const handles = getShapeHandles(shape);
     
     for (let handle of handles) {
@@ -1219,6 +1243,255 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
       }
     }
     return null;
+  };
+
+  // Show size indicator during resize operations
+  const showSizeIndicator = (shape, pos, resizeHandle) => {
+    const previewCanvas = previewCanvasRef.current;
+    if (!previewCanvas) return;
+    
+    const ctx = previewCanvas.getContext('2d');
+    ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    
+    // Calculate new dimensions based on resize handle
+    let newWidth, newHeight, newX, newY;
+    const minSize = 10;
+    
+    // Handle different shape types and resize handles
+    if (shape.type === 'triangle') {
+      switch (resizeHandle) {
+        case 'nw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = pos.x;
+          newY = pos.y;
+          break;
+        case 'ne':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 's':
+          newWidth = shape.width;
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        default:
+          return;
+      }
+    } else if (shape.type === 'diamond') {
+      switch (resizeHandle) {
+        case 'n':
+          newWidth = shape.width;
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'e':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = shape.height;
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 's':
+          newWidth = shape.width;
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 'w':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = shape.height;
+          newX = pos.x;
+          newY = shape.y;
+          break;
+        default:
+          return;
+      }
+    } else if (shape.type === 'star') {
+      // Star resizing with edge-based handles
+      switch (resizeHandle) {
+        case 'n':
+          newWidth = shape.width;
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'e':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = shape.height;
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 's':
+          newWidth = shape.width;
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 'w':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = shape.height;
+          newX = pos.x;
+          newY = shape.y;
+          break;
+        default:
+          return;
+      }
+    } else if (shape.type === 'hexagon') {
+      // Hexagon resizing with vertex-based handles
+      switch (resizeHandle) {
+        case 'n':
+          newWidth = shape.width;
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'ne':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'se':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 's':
+          newWidth = shape.width;
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 'sw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = pos.x;
+          newY = pos.y;
+          break;
+        case 'nw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = pos.x;
+          newY = pos.y;
+          break;
+        default:
+          return;
+      }
+    } else if (shape.type === 'ellipse') {
+      // Ellipse resizing with edge-based handles
+      switch (resizeHandle) {
+        case 'n':
+          newWidth = shape.width;
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'e':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = shape.height;
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 's':
+          newWidth = shape.width;
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 'w':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = shape.height;
+          newX = pos.x;
+          newY = shape.y;
+          break;
+        default:
+          return;
+      }
+    } else if (shape.type === 'pentagon') {
+      // Pentagon resizing with vertex-based handles
+      switch (resizeHandle) {
+        case 'n':
+          newWidth = shape.width;
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'ne':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'se':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 'sw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = pos.x;
+          newY = pos.y;
+          break;
+        case 'nw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = pos.x;
+          newY = pos.y;
+          break;
+        default:
+          return;
+      }
+    } else {
+      // Standard corner-based resizing for other shapes
+      switch (resizeHandle) {
+        case 'se':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = shape.x;
+          newY = shape.y;
+          break;
+        case 'sw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(pos.y - shape.y, minSize);
+          newX = pos.x;
+          newY = shape.y;
+          break;
+        case 'ne':
+          newWidth = Math.max(pos.x - shape.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = shape.x;
+          newY = pos.y;
+          break;
+        case 'nw':
+          newWidth = Math.max(shape.x + shape.width - pos.x, minSize);
+          newHeight = Math.max(shape.y + shape.height - pos.y, minSize);
+          newX = pos.x;
+          newY = pos.y;
+          break;
+        default:
+          return;
+      }
+    }
+    
+    // Draw size indicator
+    ctx.strokeStyle = '#0066FF';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(newX, newY, newWidth, newHeight);
+    
+    // Draw size text
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#0066FF';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${Math.round(newWidth)} × ${Math.round(newHeight)}`, newX + newWidth / 2, newY - 10);
   };
 
   const getShapeHandles = (shape) => {
@@ -1231,24 +1504,92 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
           { type: 'se', x: shape.x + shape.width, y: shape.y + shape.height }
         ];
       case 'circle':
+        // Circle handles positioned on the actual circle boundary
         return [
           { type: 'n', x: shape.x, y: shape.y - shape.radius },
           { type: 's', x: shape.x, y: shape.y + shape.radius },
           { type: 'e', x: shape.x + shape.radius, y: shape.y },
           { type: 'w', x: shape.x - shape.radius, y: shape.y }
         ];
-      case 'triangle':
-      case 'star':
-      case 'diamond':
-      case 'hexagon':
-      case 'ellipse':
-      case 'pentagon':
+      case 'triangle': {
+        // Triangle handles positioned on the actual triangle vertices
+        const triCenterX = shape.x + shape.width / 2;
+        const triTopY = shape.y;
+        const triLeftY = shape.y + shape.height;
+        const triRightY = shape.y + shape.height;
         return [
-          { type: 'nw', x: shape.x, y: shape.y },
-          { type: 'ne', x: shape.x + shape.width, y: shape.y },
-          { type: 'sw', x: shape.x, y: shape.y + shape.height },
-          { type: 'se', x: shape.x + shape.width, y: shape.y + shape.height }
+          { type: 'nw', x: shape.x, y: triLeftY },
+          { type: 'ne', x: shape.x + shape.width, y: triRightY },
+          { type: 's', x: triCenterX, y: triTopY }
         ];
+      }
+      case 'diamond': {
+        // Diamond handles positioned on the actual diamond vertices
+        const diamondCenterX = shape.x + shape.width / 2;
+        const diamondCenterY = shape.y + shape.height / 2;
+        return [
+          { type: 'n', x: diamondCenterX, y: shape.y },
+          { type: 'e', x: shape.x + shape.width, y: diamondCenterY },
+          { type: 's', x: diamondCenterX, y: shape.y + shape.height },
+          { type: 'w', x: shape.x, y: diamondCenterY }
+        ];
+      }
+      case 'star': {
+        // Star handles positioned on the actual star points
+        const centerX = shape.x + shape.width / 2;
+        const centerY = shape.y + shape.height / 2;
+        const radius = Math.min(shape.width, shape.height) / 2;
+        
+        return [
+          { type: 'n', x: centerX, y: centerY - radius },
+          { type: 'e', x: centerX + radius, y: centerY },
+          { type: 's', x: centerX, y: centerY + radius },
+          { type: 'w', x: centerX - radius, y: centerY }
+        ];
+      }
+      case 'hexagon': {
+        // Hexagon handles positioned on the actual hexagon vertices
+        const centerX = shape.x + shape.width / 2;
+        const centerY = shape.y + shape.height / 2;
+        const radius = Math.min(shape.width, shape.height) / 2;
+        
+        return [
+          { type: 'n', x: centerX, y: centerY - radius },
+          { type: 'ne', x: centerX + radius * Math.cos(Math.PI / 6), y: centerY - radius * Math.sin(Math.PI / 6) },
+          { type: 'se', x: centerX + radius * Math.cos(Math.PI / 6), y: centerY + radius * Math.sin(Math.PI / 6) },
+          { type: 's', x: centerX, y: centerY + radius },
+          { type: 'sw', x: centerX - radius * Math.cos(Math.PI / 6), y: centerY + radius * Math.sin(Math.PI / 6) },
+          { type: 'nw', x: centerX - radius * Math.cos(Math.PI / 6), y: centerY - radius * Math.sin(Math.PI / 6) }
+        ];
+      }
+      case 'ellipse': {
+        // Ellipse handles positioned on the actual ellipse boundary
+        const centerX = shape.x + shape.width / 2;
+        const centerY = shape.y + shape.height / 2;
+        const radiusX = shape.width / 2;
+        const radiusY = shape.height / 2;
+        
+        return [
+          { type: 'n', x: centerX, y: centerY - radiusY },
+          { type: 'e', x: centerX + radiusX, y: centerY },
+          { type: 's', x: centerX, y: centerY + radiusY },
+          { type: 'w', x: centerX - radiusX, y: centerY }
+        ];
+      }
+      case 'pentagon': {
+        // Pentagon handles positioned on the actual pentagon vertices
+        const centerX = shape.x + shape.width / 2;
+        const centerY = shape.y + shape.height / 2;
+        const radius = Math.min(shape.width, shape.height) / 2;
+        
+        return [
+          { type: 'n', x: centerX, y: centerY - radius },
+          { type: 'ne', x: centerX + radius * Math.cos(Math.PI / 5), y: centerY - radius * Math.sin(Math.PI / 5) },
+          { type: 'se', x: centerX + radius * Math.cos(Math.PI / 5), y: centerY + radius * Math.sin(Math.PI / 5) },
+          { type: 'sw', x: centerX - radius * Math.cos(Math.PI / 5), y: centerY + radius * Math.sin(Math.PI / 5) },
+          { type: 'nw', x: centerX - radius * Math.cos(Math.PI / 5), y: centerY - radius * Math.sin(Math.PI / 5) }
+        ];
+      }
       default:
         return [];
     }
@@ -1343,10 +1684,165 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
     }
   };
 
+  // Update cursor based on hover position for better UX
+  const updateCursor = (pos) => {
+    if (tool !== 'select') {
+      setHoveredHandle(null); // Clear hovered handle when not using select tool
+      return;
+    }
+    
+    const selectedShape = shapes.find(s => s.selected);
+    if (!selectedShape) return;
+    
+    const handle = getResizeHandle(pos, selectedShape);
+    if (handle) {
+      // Update hovered handle state for visual feedback
+      setHoveredHandle(handle);
+      
+      // Update cursor based on resize handle type and shape
+      const canvas = canvasRef.current;
+      if (canvas) {
+        if (selectedShape.type === 'triangle') {
+          switch (handle) {
+            case 'nw':
+            case 'ne':
+              canvas.style.cursor = 'nesw-resize';
+              break;
+            case 's':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        } else if (selectedShape.type === 'diamond') {
+          switch (handle) {
+            case 'n':
+            case 's':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            case 'e':
+            case 'w':
+              canvas.style.cursor = 'ew-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        } else if (selectedShape.type === 'star') {
+          // Star cursor handling
+          switch (handle) {
+            case 'n':
+            case 's':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            case 'e':
+            case 'w':
+              canvas.style.cursor = 'ew-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        } else if (selectedShape.type === 'hexagon') {
+          // Hexagon cursor handling
+          switch (handle) {
+            case 'n':
+            case 's':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            case 'e':
+            case 'w':
+              canvas.style.cursor = 'ew-resize';
+              break;
+            case 'ne':
+            case 'sw':
+              canvas.style.cursor = 'nesw-resize';
+              break;
+            case 'nw':
+            case 'se':
+              canvas.style.cursor = 'nwse-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        } else if (selectedShape.type === 'ellipse') {
+          // Ellipse cursor handling
+          switch (handle) {
+            case 'n':
+            case 's':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            case 'e':
+            case 'w':
+              canvas.style.cursor = 'ew-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        } else if (selectedShape.type === 'pentagon') {
+          // Pentagon cursor handling
+          switch (handle) {
+            case 'n':
+            case 's':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            case 'e':
+            case 'w':
+              canvas.style.cursor = 'ew-resize';
+              break;
+            case 'ne':
+            case 'sw':
+              canvas.style.cursor = 'nesw-resize';
+              break;
+            case 'nw':
+            case 'se':
+              canvas.style.cursor = 'nwse-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        } else {
+          // Standard cursor handling for other shapes
+          switch (handle) {
+            case 'nw':
+            case 'se':
+              canvas.style.cursor = 'nwse-resize';
+              break;
+            case 'ne':
+            case 'sw':
+              canvas.style.cursor = 'nesw-resize';
+              break;
+            default:
+              canvas.style.cursor = 'default';
+          }
+        }
+      }
+    } else if (isPointInShape(pos, selectedShape)) {
+      // Clear hovered handle when hovering over shape body
+      setHoveredHandle(null);
+      
+      // Show move cursor when hovering over shape
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'move';
+      }
+    } else {
+      // Clear hovered handle when not hovering over anything
+      setHoveredHandle(null);
+      
+      // Reset cursor
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'default';
+      }
+    }
+  };
+
   const draw = (e) => {
     if (!isDrawing && !isDrawingShape && !isDragging && !isResizing) return;
     
     const pos = getMousePos(e);
+    
+    // Update cursor for better UX
+    updateCursor(pos);
     
     if (tool === 'select' && (isDragging || isResizing)) {
       const shape = shapes.find(s => s.selected);
@@ -1361,7 +1857,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
           setShapes(newShapes);
           // Don't save transformation here - will save on mouse up
         } else if (isResizing) {
-          // Resize shape
+          // Resize shape with real-time preview
           const newShapes = shapes.map(s => {
             if (s.id !== shape.id) return s;
             
@@ -1382,20 +1878,128 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
                 const radius = Math.sqrt(Math.pow(pos.x - s.x, 2) + Math.pow(pos.y - s.y, 2));
                 return { ...s, radius };
               }
-              case 'triangle':
-              case 'star':
-              case 'diamond':
-              case 'hexagon':
-              case 'ellipse':
-              case 'pentagon': {
-                if (resizeHandle === 'se') {
-                  return { ...s, width: pos.x - s.x, height: pos.y - s.y };
-                } else if (resizeHandle === 'sw') {
-                  return { ...s, x: pos.x, width: s.x + s.width - pos.x, height: pos.y - s.y };
+              case 'triangle': {
+                // Triangle resizing with vertex-based handles
+                const minSize = 10;
+                if (resizeHandle === 'nw') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, x: pos.x, y: pos.y, width: newWidth, height: newHeight };
                 } else if (resizeHandle === 'ne') {
-                  return { ...s, y: pos.y, width: pos.x - s.x, height: s.y + s.height - pos.y };
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, width: newWidth, height: newHeight };
+                } else if (resizeHandle === 's') {
+                  // Resize from bottom center (top vertex)
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, height: newHeight };
+                }
+                break;
+              }
+              case 'diamond': {
+                // Diamond resizing with vertex-based handles
+                const minSize = 10;
+                if (resizeHandle === 'n') {
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, height: newHeight };
+                } else if (resizeHandle === 'e') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  return { ...s, width: newWidth };
+                } else if (resizeHandle === 's') {
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, height: newHeight };
+                } else if (resizeHandle === 'w') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  return { ...s, x: pos.x, width: newWidth };
+                }
+                break;
+              }
+              case 'star': {
+                // Star resizing with edge-based handles
+                const minSize = 10;
+                if (resizeHandle === 'n') {
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, height: newHeight };
+                } else if (resizeHandle === 'e') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  return { ...s, width: newWidth };
+                } else if (resizeHandle === 's') {
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, height: newHeight };
+                } else if (resizeHandle === 'w') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  return { ...s, x: pos.x, width: newWidth };
+                }
+                break;
+              }
+              case 'hexagon': {
+                // Hexagon resizing with vertex-based handles
+                const minSize = 10;
+                if (resizeHandle === 'n') {
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, height: newHeight };
+                } else if (resizeHandle === 'ne') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, width: newWidth, height: newHeight };
+                } else if (resizeHandle === 'se') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, width: newWidth, height: newHeight };
+                } else if (resizeHandle === 's') {
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, height: newHeight };
+                } else if (resizeHandle === 'sw') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, x: pos.x, width: newWidth, height: newHeight };
                 } else if (resizeHandle === 'nw') {
-                  return { ...s, x: pos.x, y: pos.y, width: s.x + s.width - pos.x, height: s.y + s.height - pos.y };
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, x: pos.x, y: pos.y, width: newWidth, height: newHeight };
+                }
+                break;
+              }
+              case 'ellipse': {
+                // Ellipse resizing with edge-based handles
+                const minSize = 10;
+                if (resizeHandle === 'n') {
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, height: newHeight };
+                } else if (resizeHandle === 'e') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  return { ...s, width: newWidth };
+                } else if (resizeHandle === 's') {
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, height: newHeight };
+                } else if (resizeHandle === 'w') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  return { ...s, x: pos.x, width: newWidth };
+                }
+                break;
+              }
+              case 'pentagon': {
+                // Pentagon resizing with vertex-based handles
+                const minSize = 10;
+                if (resizeHandle === 'n') {
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, height: newHeight };
+                } else if (resizeHandle === 'ne') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, y: pos.y, width: newWidth, height: newHeight };
+                } else if (resizeHandle === 'se') {
+                  const newWidth = Math.max(pos.x - s.x, minSize);
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, width: newWidth, height: newHeight };
+                } else if (resizeHandle === 'sw') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  const newHeight = Math.max(pos.y - s.y, minSize);
+                  return { ...s, x: pos.x, width: newWidth, height: newHeight };
+                } else if (resizeHandle === 'nw') {
+                  const newWidth = Math.max(s.x + s.width - pos.x, minSize);
+                  const newHeight = Math.max(s.y + s.height - pos.y, minSize);
+                  return { ...s, x: pos.x, y: pos.y, width: newWidth, height: newHeight };
                 }
                 break;
               }
@@ -1403,6 +2007,10 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
             return s;
           });
           setShapes(newShapes);
+          
+          // Show size indicator during resize
+          showSizeIndicator(shape, pos, resizeHandle);
+          
           // Don't save transformation here - will save on mouse up
         }
       }
@@ -1639,6 +2247,14 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
       setIsDragging(false);
       setIsResizing(false);
       setResizeHandle(null);
+      
+      // Clear preview canvas to remove size indicator
+      const previewCanvas = previewCanvasRef.current;
+      if (previewCanvas) {
+        const ctx = previewCanvas.getContext('2d');
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      }
+      
       saveToHistory();
     }
   };
@@ -1695,11 +2311,55 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
             <CardTitle>Digital Art Canvas</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Compact Toolbar and Color Palette Layout */}
+            <div className="flex gap-3 mb-4">
+              <div className="flex-1">
+                <Toolbar
+                  tool={tool}
+                  setTool={setTool}
+                  brushType={brushType}
+                  setBrushType={setBrushType}
+                  brushSize={brushSize}
+                  setBrushSize={setBrushSize}
+                  opacity={opacity}
+                  setOpacity={setOpacity}
+                  fontSize={fontSize}
+                  setFontSize={setFontSize}
+                  fontFamily={fontFamily}
+                  setFontFamily={setFontFamily}
+                  fillShapes={fillShapes}
+                  setFillShapes={setFillShapes}
+                  showGrid={showGrid}
+                  setShowGrid={setShowGrid}
+                  gridSize={gridSize}
+                  setGridSize={setGridSize}
+                  onUndo={undo}
+                  onRedo={redo}
+                  onSave={handleSave}
+                  isSaving={isSaving}
+                  canUndo={historyIndex > 0 || transformIndex > 0}
+                  canRedo={historyIndex < history.length - 1 || transformIndex < transformHistory.length - 1}
+                  brushTypes={brushTypes}
+                  fontFamilies={fontFamilies}
+                />
+              </div>
+              <div className="w-48">
+                <ColorPalette
+                  colors={colors}
+                  selectedColor={color}
+                  onColorSelect={setColor}
+                />
+              </div>
+            </div>
+
             <Canvas
               canvasRef={canvasRef}
               gridCanvasRef={gridCanvasRef}
               previewCanvasRef={previewCanvasRef}
               tool={tool}
+              brushType={brushType}
+              brushSize={brushSize}
+              color={color}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
@@ -1707,41 +2367,6 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
               showGrid={showGrid}
               gridSize={gridSize}
               drawGrid={drawGrid}
-            />
-
-            <Toolbar
-              tool={tool}
-              setTool={setTool}
-              brushType={brushType}
-              setBrushType={setBrushType}
-              brushSize={brushSize}
-              setBrushSize={setBrushSize}
-              opacity={opacity}
-              setOpacity={setOpacity}
-              fontSize={fontSize}
-              setFontSize={setFontSize}
-              fontFamily={fontFamily}
-              setFontFamily={setFontFamily}
-              fillShapes={fillShapes}
-              setFillShapes={setFillShapes}
-              showGrid={showGrid}
-              setShowGrid={setShowGrid}
-              gridSize={gridSize}
-              setGridSize={setGridSize}
-              onUndo={undo}
-              onRedo={redo}
-              onSave={handleSave}
-              isSaving={isSaving}
-              canUndo={historyIndex > 0 || transformIndex > 0}
-              canRedo={historyIndex < history.length - 1 || transformIndex < transformHistory.length - 1}
-              brushTypes={brushTypes}
-              fontFamilies={fontFamilies}
-            />
-
-            <ColorPalette
-              colors={colors}
-              selectedColor={color}
-              onColorSelect={setColor}
             />
           </CardContent>
         </Card>

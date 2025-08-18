@@ -4,6 +4,8 @@ import {
   Eraser, 
   PenTool, 
   Paintbrush, 
+  Droplets,
+  Palette,
   Type,
   Minus,
   Square,
@@ -32,6 +34,10 @@ const CustomCursor = ({ tool, brushType, brushSize, color, isVisible, position }
             return Paintbrush;
           case 'fine':
             return Circle;
+          case 'droplet':
+            return Droplets;
+          case 'oil':
+            return Palette;
           default:
             return Brush;
         }
@@ -93,20 +99,217 @@ const CustomCursor = ({ tool, brushType, brushSize, color, isVisible, position }
           />
         </div>
         
-        {/* Brush size indicator for drawing tools */}
-        {(tool === 'brush' || tool === 'eraser') && brushSize > 0 && (
-          <div 
-            className="absolute border-2 border-gray-800 rounded-full"
+        {/* Brush size indicator for drawing tools (distinct per type, visible even at small sizes) */}
+        {tool === 'eraser' && brushSize > 0 && (
+          <div
+            className="absolute rounded-full"
             style={{
-              width: `${Math.max(brushSize, 4)}px`,
-              height: `${Math.max(brushSize, 4)}px`,
+              width: `${Math.max(brushSize, 6)}px`,
+              height: `${Math.max(brushSize, 6)}px`,
               left: '50%',
               top: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: tool === 'eraser' ? 'rgba(107, 114, 128, 0.3)' : `${color}40`,
-              borderColor: tool === 'eraser' ? '#6B7280' : color
+              backgroundColor: 'rgba(107, 114, 128, 0.25)',
+              border: '2px solid #6B7280'
             }}
           />
+        )}
+
+        {tool === 'brush' && brushSize > 0 && (
+          <>
+            {brushType === 'pencil' && (
+              <div
+                className="absolute"
+                style={{
+                  width: `${Math.max(brushSize, 6)}px`,
+                  height: `${Math.max(brushSize, 6)}px`,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%) rotate(45deg)',
+                  border: `2px solid ${color}`,
+                  borderRadius: '2px',
+                  backgroundColor: `${color}10`
+                }}
+              />
+            )}
+
+            {brushType === 'marker' && (
+              <div
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.max(brushSize, 6)}px`,
+                  height: `${Math.max(brushSize, 6)}px`,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  backgroundColor: `${color}33`,
+                  border: `2px dashed ${color}`,
+                  boxShadow: `0 0 0 3px ${color}22`
+                }}
+              />
+            )}
+
+            {brushType === 'fine' && (
+              <>
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: `${Math.max(brushSize, 6)}px`,
+                    height: `${Math.max(brushSize, 6)}px`,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    border: `1px solid ${color}`,
+                    backgroundColor: 'transparent'
+                  }}
+                />
+                {/* Crosshair */}
+                <div
+                  className="absolute"
+                  style={{
+                    width: `${Math.max(brushSize, 6)}px`,
+                    height: '1px',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    backgroundColor: color
+                  }}
+                />
+                <div
+                  className="absolute"
+                  style={{
+                    width: '1px',
+                    height: `${Math.max(brushSize, 6)}px`,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    backgroundColor: color
+                  }}
+                />
+              </>
+            )}
+
+            {brushType === 'crayon' && (
+              <>
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: `${Math.max(brushSize, 6)}px`,
+                    height: `${Math.max(brushSize, 6)}px`,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    border: `2px dotted ${color}`,
+                    backgroundColor: `${color}1a`
+                  }}
+                />
+                {[...Array(3)].map((_, i) => {
+                  const angle = (i / 3) * Math.PI * 2 + Math.PI / 6;
+                  const dist = Math.max(6, brushSize) * 0.6;
+                  const x = Math.cos(angle) * dist;
+                  const y = Math.sin(angle) * dist;
+                  return (
+                    <div key={i}
+                      className="absolute rounded-full"
+                      style={{
+                        width: '2px',
+                        height: '2px',
+                        left: `calc(50% + ${x}px)`,
+                        top: `calc(50% + ${y}px)`,
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: color,
+                        opacity: 0.7
+                      }}
+                    />
+                  );
+                })}
+              </>
+            )}
+
+            {brushType === 'oil' && (
+              <>
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: `${Math.max(brushSize * 1.2, 8)}px`,
+                    height: `${Math.max(brushSize * 1.2, 8)}px`,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    border: `2px solid ${color}`,
+                    boxShadow: `inset 0 0 4px ${color}66, 0 0 6px ${color}33`,
+                    background: `radial-gradient(circle at 30% 30%, ${color}55, transparent 60%)`
+                  }}
+                />
+                {[...Array(5)].map((_, i) => (
+                  <div key={i}
+                    className="absolute"
+                    style={{
+                      width: `${Math.max(brushSize * 0.2, 2)}px`,
+                      height: '2px',
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -50%) rotate(${i * 12}deg)`,
+                      backgroundColor: color,
+                      opacity: 0.5
+                    }}
+                  />
+                ))}
+              </>
+            )}
+
+            {brushType === 'droplet' && (
+              <>
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    width: `${Math.max(brushSize, 6)}px`,
+                    height: `${Math.max(brushSize, 6)}px`,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    backgroundColor: `${color}33`,
+                    border: `2px solid ${color}`
+                  }}
+                />
+                {/* small splash dots */}
+                {[...Array(4)].map((_, i) => {
+                  const angle = (i / 4) * Math.PI * 2;
+                  const dist = Math.max(6, brushSize) * 0.8;
+                  const x = Math.cos(angle) * dist;
+                  const y = Math.sin(angle) * dist;
+                  return (
+                    <div key={i}
+                      className="absolute rounded-full"
+                      style={{
+                        width: '3px',
+                        height: '3px',
+                        left: `calc(50% + ${x}px)`,
+                        top: `calc(50% + ${y}px)`,
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: color
+                      }}
+                    />
+                  );
+                })}
+              </>
+            )}
+
+            {(!['pencil', 'marker', 'fine', 'droplet'].includes(brushType)) && (
+              <div
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.max(brushSize, 6)}px`,
+                  height: `${Math.max(brushSize, 6)}px`,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  backgroundColor: `${color}26`,
+                  border: `2px solid ${color}`
+                }}
+              />
+            )}
+          </>
         )}
         
         {/* Text tool indicator */}

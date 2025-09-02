@@ -140,25 +140,34 @@ const Tutorials = () => {
                   You can access: {JSON.parse(localStorage.getItem('accessibleLevels') || '["beginner"]').join(', ')} tutorials
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Complete 5 tutorials of your current level to unlock the next level!
-              </p>
-              
-              {/* Progress Indicator */}
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Progress to next level:</span>
-                  <span>{tutorials.filter(t => t.isCompleted && t.difficulty === localStorage.getItem('userLevel')).length}/5</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${Math.min((tutorials.filter(t => t.isCompleted && t.difficulty === localStorage.getItem('userLevel')).length / 5) * 100, 100)}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
+              {localStorage.getItem('userLevel') === 'advanced' ? (
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                  <span className="inline-block w-4 h-4">🎨</span>
+                  Congratulations! You've reached the Advanced level and have access to all tutorials.
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Complete 3 tutorials of your current level to unlock the next level!
+                  </p>
+                  
+                  {/* Progress Indicator */}
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span>Progress to next level:</span>
+                      <span>{tutorials.filter(t => t.isCompleted && t.difficulty === localStorage.getItem('userLevel')).length}/3</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min((tutorials.filter(t => t.isCompleted && t.difficulty === localStorage.getItem('userLevel')).length / 3) * 100, 100)}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

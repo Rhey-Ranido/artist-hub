@@ -12,8 +12,6 @@ import {
   MessageSquare, 
   Search, 
   Send, 
-  Phone, 
-  Video, 
   Info,
   ArrowLeft,
   User,
@@ -1023,12 +1021,6 @@ const Messages = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" className="hidden sm:flex">
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="hidden sm:flex">
-                          <Video className="h-4 w-4" />
-                        </Button>
                         <Button variant="ghost" size="sm">
                           <Info className="h-4 w-4" />
                         </Button>

@@ -75,17 +75,17 @@ export const createArtwork = async (req, res) => {
 
         if (user.level === 'beginner') {
           const completedCount = user.completedTutorials.length;
-          if (completedCount >= 5) {
+          if (completedCount >= 3) {
             levelUp = true;
             newLevel = 'intermediate';
-            levelUpMessage = "Congratulations! You've completed 5 tutorials and leveled up to Intermediate! 🎨";
+            levelUpMessage = "Congratulations! You've completed 3 tutorials and leveled up to Intermediate! 🎨";
           }
         } else if (user.level === 'intermediate') {
           const completedCount = user.completedTutorials.length;
-          if (completedCount >= 10) {
+          if (completedCount >= 3) {
             levelUp = true;
             newLevel = 'advanced';
-            levelUpMessage = "Amazing work! You've mastered 10 tutorials and reached Advanced level! 🎨✨";
+            levelUpMessage = "Amazing work! You've mastered 3 tutorials and reached Advanced level! 🎨✨";
           }
         }
 

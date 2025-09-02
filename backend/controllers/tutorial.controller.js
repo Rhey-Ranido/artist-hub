@@ -255,11 +255,11 @@ export const completeTutorial = async (req, res) => {
         difficulty: 'beginner'
       });
 
-      if (completedBeginnerTutorials.length >= 5) {
+      if (completedBeginnerTutorials.length >= 3) {
         user.level = 'intermediate';
         newLevel = 'intermediate';
         levelUp = true;
-        levelUpMessage = "🎉 Congratulations! You've completed 5 beginner tutorials and leveled up to Intermediate! You can now access intermediate tutorials.";
+        levelUpMessage = "🎉 Congratulations! You've completed 3 beginner tutorials and leveled up to Intermediate! You can now access intermediate tutorials.";
       }
     } else if (user.level === 'intermediate') {
       // Count intermediate tutorials completed
@@ -268,11 +268,11 @@ export const completeTutorial = async (req, res) => {
         difficulty: 'intermediate'
       });
 
-      if (completedIntermediateTutorials.length >= 5) {
+      if (completedIntermediateTutorials.length >= 3) {
         user.level = 'advanced';
         newLevel = 'advanced';
         levelUp = true;
-        levelUpMessage = "🎉 Amazing! You've completed 5 intermediate tutorials and leveled up to Advanced! You can now access advanced tutorials.";
+        levelUpMessage = "🎉 Amazing! You've completed 3 intermediate tutorials and leveled up to Advanced! You can now access advanced tutorials.";
       }
     }
 

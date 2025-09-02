@@ -2,20 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import ArtworkCard from '@/components/ArtworkCard';
 import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search as SearchIcon, 
   User, 
-  Palette, 
   Loader2,
-  Heart,
-  MessageCircle,
-  Eye
+  MessageCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,16 +18,9 @@ const Search = () => {
   const API_BASE_URL = 'http://localhost:5000/api';
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [artworks, setArtworks] = useState([]);
   const [users, setUsers] = useState([]);
-  const [suggestedArtworks, setSuggestedArtworks] = useState([]);
-  const [suggestedPage, setSuggestedPage] = useState(1);
-  const [hasMoreSuggested, setHasMoreSuggested] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [artworksLoading, setArtworksLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [suggestedLoading, setSuggestedLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('artworks');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -43,40 +30,14 @@ const Search = () => {
       setQuery(searchQuery);
       handleSearch(searchQuery);
     }
-    // Always fetch suggested artworks
-    fetchSuggestedArtworks();
   }, [searchParams]);
 
   const handleSearch = async (searchQuery = query) => {
     if (!searchQuery.trim()) return;
 
     setLoading(true);
-    
-    // Search artworks and users in parallel
-    await Promise.all([
-      searchArtworks(searchQuery),
-      searchUsers(searchQuery)
-    ]);
-
+    await searchUsers(searchQuery);
     setLoading(false);
-  };
-
-  const searchArtworks = async (searchQuery) => {
-    try {
-      setArtworksLoading(true);
-      const response = await fetch(
-        `http://localhost:5000/api/artworks/search?query=${encodeURIComponent(searchQuery)}&limit=20`
-      );
-      const data = await response.json();
-
-      if (response.ok) {
-        setArtworks(data.artworks);
-      }
-    } catch (err) {
-      console.error('Artwork search error:', err);
-    } finally {
-      setArtworksLoading(false);
-    }
   };
 
   const searchUsers = async (searchQuery) => {
@@ -97,34 +58,7 @@ const Search = () => {
     }
   };
 
-  const fetchSuggestedArtworks = async (page = 1, append = false) => {
-    try {
-      setSuggestedLoading(true);
-      const response = await fetch(`${API_BASE_URL}/artworks/feed?limit=12&page=${page}`);
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (append) {
-          setSuggestedArtworks(prev => [...prev, ...(data.artworks || [])]);
-        } else {
-          setSuggestedArtworks(data.artworks || []);
-        }
-        
-        setHasMoreSuggested(data.pagination?.hasNext || false);
-        setSuggestedPage(page);
-      }
-    } catch (error) {
-      console.error('Error fetching suggested artworks:', error);
-    } finally {
-      setSuggestedLoading(false);
-    }
-  };
 
-  const loadMoreSuggested = async () => {
-    if (hasMoreSuggested && !suggestedLoading) {
-      await fetchSuggestedArtworks(suggestedPage + 1, true);
-    }
-  };
 
   const handleMessageUser = (userId, username) => {
     if (!user) {
@@ -163,39 +97,8 @@ const Search = () => {
         </div>
 
         {/* Search Results */}
-        {(artworks.length > 0 || users.length > 0 || loading) ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="artworks" className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                Artworks ({artworks.length})
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Artists ({users.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="artworks" className="mt-6">
-              {artworksLoading ? (
-                <div className="flex justify-center items-center min-h-32">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : artworks.length === 0 && query ? (
-                <div className="text-center py-12">
-                  <Palette className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">No artworks found for "{query}"</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {artworks.map((artwork) => (
-                    <ArtworkCard key={artwork._id} artwork={artwork} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="users" className="mt-6">
+        {(users.length > 0 || loading) ? (
+          <div className="mt-6">
               {usersLoading ? (
                 <div className="flex justify-center items-center min-h-32">
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -281,8 +184,7 @@ const Search = () => {
                   ))}
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+          </div>
         ) : query ? (
           <div className="text-center py-12">
             <SearchIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -294,58 +196,14 @@ const Search = () => {
         ) : (
           <div className="text-center py-12">
             <SearchIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500">Search for artworks, artists, or tags</p>
+            <p className="text-gray-500">Search for users by name or username</p>
             <p className="text-gray-400 text-sm mt-2">
-              Discover amazing digital art and connect with talented artists
+              Connect with other users and start collaborating
             </p>
           </div>
         )}
 
-        {/* Suggested Artworks Section */}
-        {suggestedArtworks.length > 0 && (
-          <section className="mt-16">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-foreground mb-2">Suggested Artworks</h2>
-              <p className="text-muted-foreground">
-                Discover more amazing artworks from our community
-              </p>
-            </div>
-            
-            {suggestedLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-                         ) : (
-               <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {suggestedArtworks.map((artwork) => (
-                      <ArtworkCard key={artwork._id} artwork={artwork} />
-                    ))}
-                  </div>
-                 
-                 {hasMoreSuggested && (
-                   <div className="text-center mt-8">
-                     <Button 
-                       onClick={loadMoreSuggested}
-                       disabled={suggestedLoading}
-                       variant="outline"
-                       className="px-8"
-                     >
-                       {suggestedLoading ? (
-                         <>
-                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                           Loading...
-                         </>
-                       ) : (
-                         'Load More Artworks'
-                       )}
-                     </Button>
-                   </div>
-                 )}
-               </>
-             )}
-          </section>
-        )}
+
       </div>
 
       <Footer />

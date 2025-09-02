@@ -21,7 +21,7 @@ const ArtworkDetails = ({
   onSave
 }) => {
   return (
-    <Card>
+    <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Artwork Details</CardTitle>
       </CardHeader>
@@ -32,15 +32,27 @@ const ArtworkDetails = ({
           </Alert>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="title">Title *</Label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter artwork title"
-            maxLength={100}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter artwork title"
+              maxLength={100}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <Input
+              id="tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="abstract, digital, art (comma-separated)"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -55,16 +67,6 @@ const ArtworkDetails = ({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="tags">Tags</Label>
-          <Input
-            id="tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="abstract, digital, art (comma-separated)"
-          />
-        </div>
-
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
@@ -76,11 +78,11 @@ const ArtworkDetails = ({
           <Label htmlFor="isPublic">Make public</Label>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 flex justify-center md:justify-start">
           <Button
             onClick={onSave}
             disabled={isSaving || !title.trim()}
-            className="w-full"
+            className="w-full md:w-auto min-w-[140px]"
           >
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSaving ? 'Saving...' : 'Save Artwork'}

@@ -15,8 +15,6 @@ const Create = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpData, setLevelUpData] = useState(null);
   
@@ -47,6 +45,11 @@ const Create = () => {
       formData.append('tools', JSON.stringify(artworkData.tools));
       formData.append('colors', JSON.stringify(artworkData.colors));
       
+      // Add tutorial ID if artwork is created from a tutorial
+      if (tutorialId) {
+        formData.append('tutorialId', tutorialId);
+      }
+      
       if (imageBlob) {
         formData.append('image', imageBlob, 'artwork.png');
       }
@@ -67,12 +70,31 @@ const Create = () => {
 
       setSuccess('Artwork saved successfully!');
       setError('');
+
+      // Handle tutorial completion and level up
+      if (data.tutorialCompleted && data.levelUp) {
+        setLevelUpData({
+          newLevel: data.newLevel,
+          levelUpMessage: data.levelUpMessage
+        });
+        setShowLevelUpModal(true);
+        
+        // Update user level in localStorage
+        localStorage.setItem('userLevel', data.newLevel);
+        
+        // Update accessible levels based on new level
+        const levelAccess = {
+          'beginner': ['beginner'],
+          'intermediate': ['beginner', 'intermediate'],
+          'advanced': ['beginner', 'intermediate', 'advanced']
+        };
+        localStorage.setItem('accessibleLevels', JSON.stringify(levelAccess[data.newLevel] || ['beginner']));
+      }
       
       // Redirect to the artwork page after a short delay
       setTimeout(() => {
         navigate(`/artwork/${data.artwork._id}`);
       }, 2000);
-
     } catch (err) {
       setError(err.message);
       setSuccess('');
@@ -95,74 +117,7 @@ const Create = () => {
     .slice()
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const handleCompleteTutorial = async () => {
-    if (!tutorialId) {
-      setError('No tutorial ID found');
-      return;
-    }
 
-    if (isCompleting || isCompleted) return;
-
-    setIsCompleting(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/tutorials/${tutorialId}/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsCompleted(true);
-        
-        // Show success message
-        if (data.levelUp) {
-          setLevelUpData({
-            newLevel: data.newLevel,
-            levelUpMessage: data.levelUpMessage
-          });
-          setShowLevelUpModal(true);
-          
-          // Update user level in localStorage
-          localStorage.setItem('userLevel', data.newLevel);
-          
-          // Update accessible levels based on new level
-          const levelAccess = {
-            'beginner': ['beginner'],
-            'intermediate': ['beginner', 'intermediate'],
-            'advanced': ['beginner', 'intermediate', 'advanced']
-          };
-          localStorage.setItem('accessibleLevels', JSON.stringify(levelAccess[data.newLevel] || ['beginner']));
-        } else {
-          setSuccess('✅ Tutorial completed successfully!');
-        }
-        
-        console.log('Tutorial completed successfully!', data);
-      } else {
-        const errorData = await response.json();
-        if (errorData.isCompleted) {
-          setIsCompleted(true);
-          setSuccess('This tutorial has already been completed!');
-        } else {
-          setError(errorData.message || 'Failed to complete tutorial');
-        }
-        console.error('Server error:', errorData.message);
-      }
-    } catch (error) {
-      console.error('Error completing tutorial:', error);
-      setError('Failed to complete tutorial. Please try again.');
-    } finally {
-      setIsCompleting(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -213,29 +168,7 @@ const Create = () => {
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
-                  {tutorialId && (
-                    <Button
-                      onClick={handleCompleteTutorial}
-                      disabled={isCompleted || isCompleting}
-                      variant={isCompleted ? "outline" : "default"}
-                      size="sm"
-                      className={`${
-                        isCompleted 
-                          ? 'border-green-500 text-green-700 bg-green-50 hover:bg-green-100 cursor-not-allowed opacity-75' 
-                          : 'bg-green-600 hover:bg-green-700 text-white'
-                      }`}
-                      title={isCompleted ? 'Tutorial already completed' : 'Mark this tutorial as completed'}
-                    >
-                      {isCompleting ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : isCompleted ? (
-                        <Check className="h-4 w-4 mr-1" />
-                      ) : (
-                        <Check className="h-4 w-4 mr-1" />
-                      )}
-                      {isCompleted ? 'Completed' : isCompleting ? 'Completing...' : 'Complete Tutorial'}
-                    </Button>
-                  )}
+
                 </div>
               </div>
               

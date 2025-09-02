@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Clock, Calendar, ArrowLeft, Heart, Tag, BookOpen, Palette, Check } from 'lucide-react';
+import { Loader2, Clock, Calendar, ArrowLeft, Heart, Tag, BookOpen, Palette, Share2, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LevelUpModal from '../components/LevelUpModal';
 
@@ -25,6 +25,7 @@ const TutorialDetail = () => {
   const [completing, setCompleting] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpData, setLevelUpData] = useState(null);
+  const [showCopySuccess, setShowCopySuccess] = useState(false);
 
   useEffect(() => {
     const fetchTutorial = async () => {
@@ -119,6 +120,18 @@ const TutorialDetail = () => {
         tutorialTitle: tutorial.title
       } 
     });
+  };
+
+  const handleShareTutorial = async () => {
+    try {
+      // Ensure we use the correct route path (tutorials)
+      const tutorialUrl = `${window.location.origin}/tutorials/${id}`;
+      await navigator.clipboard.writeText(tutorialUrl);
+      setShowCopySuccess(true);
+      setTimeout(() => setShowCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
   };
 
   const handleCompleteTutorial = async () => {
@@ -369,26 +382,28 @@ const TutorialDetail = () => {
                     <Palette className="h-5 w-5 mr-2" />
                     Create Artwork from This Tutorial
                   </Button>
-                  <Button 
-                    onClick={handleCompleteTutorial}
-                    disabled={isCompleted || completing}
-                    variant={isCompleted ? "outline" : "default"}
+
+                  <Button
+                    onClick={handleShareTutorial}
                     size="lg"
-                    className={`px-8 py-3 ${
-                      isCompleted 
-                        ? 'border-green-500 text-green-700 bg-green-50 hover:bg-green-100 cursor-not-allowed opacity-75' 
-                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    variant="outline"
+                    className={`px-8 py-3 transition-colors duration-200 ${
+                      showCopySuccess 
+                        ? 'border-green-500 text-green-700 bg-green-50 hover:bg-green-100' 
+                        : ''
                     }`}
-                    title={isCompleted ? 'Tutorial already completed' : 'Mark this tutorial as completed'}
                   >
-                    {completing ? (
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    ) : isCompleted ? (
-                      <Check className="h-5 w-5 mr-2" />
+                    {showCopySuccess ? (
+                      <>
+                        <Check className="h-5 w-5 mr-2" />
+                        Link Copied!
+                      </>
                     ) : (
-                      <Check className="h-5 w-5 mr-2" />
+                      <>
+                        <Share2 className="h-5 w-5 mr-2" />
+                        Share Tutorial
+                      </>
                     )}
-                    {isCompleted ? 'Completed' : completing ? 'Marking as Complete...' : 'Mark as Completed'}
                   </Button>
                 </div>
               </div>

@@ -12,7 +12,7 @@ import {
   Loader2,
   Search
 } from 'lucide-react';
-import TutorialCard from '@/components/TutorialCard';
+import TutorialCategories from '@/components/TutorialCategories';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -103,7 +103,7 @@ const Tutorials = () => {
   };
 
   const handleViewTutorial = (tutorial) => {
-    navigate(`/tutorial/${tutorial._id}`);
+    navigate(`/tutorials/${tutorial._id}`);
   };
 
   return (
@@ -221,14 +221,12 @@ const Tutorials = () => {
           </div>
         ) : tutorials.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {tutorials.map((tutorial) => (
-                <TutorialCard
-                  key={tutorial._id}
-                  tutorial={tutorial}
-                  onView={() => handleViewTutorial(tutorial)}
-                />
-              ))}
+            <div className="mb-8">
+              <TutorialCategories
+                tutorials={tutorials}
+                userLevel={localStorage.getItem('userLevel') || 'beginner'}
+                onViewTutorial={handleViewTutorial}
+              />
             </div>
 
             {/* Pagination */}

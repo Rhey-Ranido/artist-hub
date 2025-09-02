@@ -15,7 +15,6 @@ import {
 
 // Import components
 import Toolbar from "./Toolbar";
-import ColorPalette from "./ColorPalette";
 import Canvas from "./Canvas";
 import TextModal from "./TextModal";
 import ArtworkDetails from "./ArtworkDetails";
@@ -352,7 +351,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
 
     const ctx = canvas.getContext("2d");
 
-    // Set canvas sizes
+    // Set canvas sizes - will be updated by Canvas component
     canvas.width = 800;
     canvas.height = 600;
     gridCanvas.width = 800;
@@ -2915,56 +2914,50 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div className="flex flex-col gap-6">
       {/* Canvas Area */}
-      <div className="lg:col-span-3">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>Digital Art Canvas</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Compact Toolbar and Color Palette Layout */}
-            <div className="flex gap-3 mb-4">
-              <div className="flex-1">
-                <Toolbar
-                  tool={tool}
-                  setTool={setTool}
-                  brushType={brushType}
-                  setBrushType={setBrushType}
-                  brushSize={brushSize}
-                  setBrushSize={setBrushSize}
-                  opacity={opacity}
-                  setOpacity={setOpacity}
-                  fontSize={fontSize}
-                  setFontSize={setFontSize}
-                  fontFamily={fontFamily}
-                  setFontFamily={setFontFamily}
-                  fillShapes={fillShapes}
-                  setFillShapes={setFillShapes}
-                  showGrid={showGrid}
-                  setShowGrid={setShowGrid}
-                  gridSize={gridSize}
-                  setGridSize={setGridSize}
-                  onUndo={undo}
-                  onRedo={redo}
-                  onSave={handleSave}
-                  isSaving={isSaving}
-                  canUndo={historyIndex > 0 || transformIndex > 0}
-                  canRedo={
-                    historyIndex < history.length - 1 ||
-                    transformIndex < transformHistory.length - 1
-                  }
-                  brushTypes={brushTypes}
-                  fontFamilies={fontFamilies}
-                />
-              </div>
-              <div className="w-48">
-                <ColorPalette
-                  colors={colors}
-                  selectedColor={color}
-                  onColorSelect={setColor}
-                />
-              </div>
+            {/* Integrated Toolbar with Color Palette */}
+            <div className="mb-4">
+              <Toolbar
+                tool={tool}
+                setTool={setTool}
+                brushType={brushType}
+                setBrushType={setBrushType}
+                brushSize={brushSize}
+                setBrushSize={setBrushSize}
+                opacity={opacity}
+                setOpacity={setOpacity}
+                fontSize={fontSize}
+                setFontSize={setFontSize}
+                fontFamily={fontFamily}
+                setFontFamily={setFontFamily}
+                fillShapes={fillShapes}
+                setFillShapes={setFillShapes}
+                showGrid={showGrid}
+                setShowGrid={setShowGrid}
+                gridSize={gridSize}
+                setGridSize={setGridSize}
+                onUndo={undo}
+                onRedo={redo}
+                onSave={handleSave}
+                isSaving={isSaving}
+                canUndo={historyIndex > 0 || transformIndex > 0}
+                canRedo={
+                  historyIndex < history.length - 1 ||
+                  transformIndex < transformHistory.length - 1
+                }
+                brushTypes={brushTypes}
+                fontFamilies={fontFamilies}
+                colors={colors}
+                selectedColor={color}
+                onColorSelect={setColor}
+              />
             </div>
 
             <Canvas
@@ -2987,8 +2980,8 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
         </Card>
       </div>
 
-      {/* Artwork Details Panel */}
-      <div className="lg:col-span-1">
+      {/* Artwork Details Panel - Below Canvas */}
+      <div>
         <ArtworkDetails
           title={title}
           setTitle={setTitle}

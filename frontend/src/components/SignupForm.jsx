@@ -18,6 +18,7 @@ const SignupForm = ({ onSignupSuccess }) => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
+    birthday: '',
     role: 'user', // Default role for art studio
     level: 'beginner' // Default level for new users
   });
@@ -99,6 +100,7 @@ const SignupForm = ({ onSignupSuccess }) => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
+        birthday: formData.birthday,
         role: formData.role,
         level: formData.level
       };
@@ -119,7 +121,8 @@ const SignupForm = ({ onSignupSuccess }) => {
             password: '', 
             confirmPassword: '',
             firstName: '',
-            lastName: '', 
+            lastName: '',
+            birthday: '',
             role: 'user',
             level: 'beginner'
           });
@@ -209,6 +212,18 @@ const SignupForm = ({ onSignupSuccess }) => {
                 disabled={isLoading}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="birthday">Birthday</Label>
+            <Input
+              id="birthday"
+              name="birthday"
+              type="date"
+              value={formData.birthday}
+              onChange={handleChange}
+              disabled={isLoading}
+            />
           </div>
 
           <div className="space-y-2">

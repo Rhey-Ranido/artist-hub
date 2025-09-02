@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useAuth } from '@/contexts/AuthContext';
 import Footer from '../components/Footer';
 import ArtworkFeed from '../components/ArtworkFeed';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Palette, Brush, Users, Heart, Sparkles, Plus, Loader2 } from 'lucide-re
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,16 +56,33 @@ export default function Home() {
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-              Create, Share, and
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 block">
-                Inspire with Art
-              </span>
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
+              {user ? (
+                <>
+                  Welcome back,{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                    {user.firstName || user.username}
+                  </span>
+                  <span className="block text-3xl md:text-4xl mt-2 text-muted-foreground font-normal">
+                    Ready to create something amazing today?
+                  </span>
+                </>
+              ) : (
+                <>
+                  Create, Share, and
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 block">
+                    Inspire with Art
+                  </span>
+                </>
+              )}
             </h1>
             
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Join our vibrant community of digital artists. Create stunning artworks with our canvas tools, 
-              share your creativity, and connect with fellow artists from around the world.
+              {user ? (
+                "Our canvas is waiting for your next masterpiece. Let your creativity flow and inspire others with your unique artistic vision."
+              ) : (
+                "Join our vibrant community of digital artists. Create stunning artworks with our canvas tools, share your creativity, and connect with fellow artists from around the world."
+              )}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -73,15 +92,7 @@ export default function Home() {
                 onClick={() => navigate("/create")}
               >
                 <Plus className="mr-2 h-5 w-5" />
-                Start Creating
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="text-lg px-8 py-3"
-                onClick={() => navigate("/register")}
-              >
-                Join Community
+                {user ? "Create New Artwork" : "Start Creating"}
               </Button>
             </div>
           </div>
@@ -227,35 +238,29 @@ export default function Home() {
       </section>
 
       {/* Call to Action Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-600 to-pink-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Start Your Artistic Journey?
-          </h2>
-          <p className="text-xl text-purple-100 mb-8">
-            Join thousands of artists who are already creating and sharing their digital masterpieces.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg"
-              variant="secondary"
-              className="text-lg px-8 py-3"
-              onClick={() => navigate("/create")}
-            >
-              <Palette className="mr-2 h-5 w-5" />
-              Create Your First Artwork
-            </Button>
-            <Button 
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-purple-600"
-              onClick={() => navigate("/register")}
-            >
-              Sign Up Free
-            </Button>
+      {!user && (
+        <section className="py-20 bg-gradient-to-r from-purple-600 to-pink-600">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Ready to Start Your Artistic Journey?
+            </h2>
+            <p className="text-xl text-purple-100 mb-8">
+              Join thousands of artists who are already creating and sharing their digital masterpieces.
+            </p>
+            <div className="flex justify-center">
+              <Button 
+                size="lg"
+                variant="secondary"
+                className="text-lg px-8 py-3"
+                onClick={() => navigate("/create")}
+              >
+                <Palette className="mr-2 h-5 w-5" />
+                Create Your First Artwork
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <Footer />
     </div>

@@ -38,7 +38,7 @@ function App() {
             <Route path="/messages" element={<Messages />} />
             <Route path="/search" element={<Search />} />
             <Route path="/tutorials" element={<Tutorials />} />
-            <Route path="/tutorial/:id" element={<TutorialDetail />} />
+            <Route path="/tutorials/:id" element={<TutorialDetail />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/user/:id" element={<AdminUserDetail />} />
             <Route path="/admin/artwork/:id" element={<AdminArtworkDetail />} />

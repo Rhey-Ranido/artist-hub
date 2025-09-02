@@ -8,7 +8,7 @@ import path from "path";
 // Create new artwork
 export const createArtwork = async (req, res) => {
   try {
-    const { title, description, canvasData, tags, dimensions, tools, colors, isPublic } = req.body;
+    const { title, description, canvasData, tags, dimensions, tools, colors, isPublic, tutorialId } = req.body;
     const userId = req.user.id;
 
     console.log("Received artwork data:", { title, description, canvasData: canvasData ? "present" : "missing", tags, dimensions, tools, colors, isPublic });
@@ -57,6 +57,46 @@ export const createArtwork = async (req, res) => {
     const artwork = new Artwork(artworkData);
     await artwork.save();
 
+    // If artwork was created from a tutorial, mark the tutorial as completed
+    if (tutorialId) {
+      const user = await User.findById(userId);
+      if (!user.completedTutorials) {
+        user.completedTutorials = [];
+      }
+      
+      // Only complete if not already completed
+      if (!user.completedTutorials.includes(tutorialId)) {
+        user.completedTutorials.push(tutorialId);
+        
+        // Check if user should level up based on their current level
+        let levelUp = false;
+        let newLevel = user.level;
+        let levelUpMessage = "";
+
+        if (user.level === 'beginner') {
+          const completedCount = user.completedTutorials.length;
+          if (completedCount >= 5) {
+            levelUp = true;
+            newLevel = 'intermediate';
+            levelUpMessage = "Congratulations! You've completed 5 tutorials and leveled up to Intermediate! 🎨";
+          }
+        } else if (user.level === 'intermediate') {
+          const completedCount = user.completedTutorials.length;
+          if (completedCount >= 10) {
+            levelUp = true;
+            newLevel = 'advanced';
+            levelUpMessage = "Amazing work! You've mastered 10 tutorials and reached Advanced level! 🎨✨";
+          }
+        }
+
+        if (levelUp) {
+          user.level = newLevel;
+        }
+
+        await user.save();
+      }
+    }
+
     // Update user's artwork count
     await User.findByIdAndUpdate(userId, { $inc: { artworksCount: 1 } });
 
@@ -66,7 +106,11 @@ export const createArtwork = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Artwork created successfully",
-      artwork
+      artwork,
+      tutorialCompleted: tutorialId ? true : false,
+      levelUp: levelUp || false,
+      newLevel: levelUp ? newLevel : undefined,
+      levelUpMessage: levelUp ? levelUpMessage : undefined
     });
   } catch (error) {
     console.error("Create artwork error:", error);

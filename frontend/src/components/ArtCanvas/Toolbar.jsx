@@ -54,12 +54,15 @@ const Toolbar = ({
   canUndo,
   canRedo,
   brushTypes,
-  fontFamilies
+  fontFamilies,
+  colors,
+  selectedColor,
+  onColorSelect
 }) => {
   return (
     <div className="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
       {/* Primary Tools Row - Compact */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
         {/* Drawing Tools */}
         <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-gray-700 rounded border">
           <Button
@@ -223,10 +226,39 @@ const Toolbar = ({
             <Grid3X3 className="h-3.5 w-3.5" />
           </Button>
         </div>
+
+        {/* Color Palette - Integrated */}
+        <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-gray-700 rounded border">
+          <div className="flex items-center gap-1">
+            <Palette className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+            <div className="grid grid-cols-8 gap-0.5">
+              {colors.slice(0, 8).map((color) => (
+                <button
+                  key={color}
+                  className={`w-4 h-4 rounded border transition-all duration-200 hover:scale-110 ${
+                    selectedColor === color 
+                      ? 'border-blue-500 ring-1 ring-blue-300 shadow-sm' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => onColorSelect(color)}
+                  title={color}
+                />
+              ))}
+            </div>
+            <input
+              type="color"
+              value={selectedColor}
+              onChange={(e) => onColorSelect(e.target.value)}
+              className="w-5 h-5 rounded border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
+              title="Custom Color"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Compact Controls Row */}
-      <div className="flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded border">
+      <div className="flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded border flex-wrap">
         {/* Brush Controls - Compact */}
         <div className="flex items-center gap-2">
           <Label htmlFor="brushSize" className="text-xs font-medium text-gray-600 dark:text-gray-400">Size</Label>

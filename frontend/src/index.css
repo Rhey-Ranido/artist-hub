@@ -203,6 +203,33 @@
   cursor: none !important;
 }
 
+/* Responsive canvas container */
+@media (max-width: 1024px) {
+  .canvas-container {
+    width: 100% !important;
+    max-width: 800px;
+    height: auto !important;
+    aspect-ratio: 4/3;
+  }
+  
+  .canvas-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .canvas-container {
+    max-width: 600px;
+  }
+}
+
+@media (max-width: 640px) {
+  .canvas-container {
+    max-width: 400px;
+  }
+}
+
 /* Ensure custom cursor works on different screen densities */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .custom-cursor {

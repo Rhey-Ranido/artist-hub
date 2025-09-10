@@ -771,42 +771,6 @@ const AdminDashboard = () => {
               </Card>
             </div>
 
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {stats.recentProviders.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">No recent activity</p>
-                  ) : (
-                    stats.recentProviders.map((provider) => (
-                      <div key={provider.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-primary-foreground" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{provider.name}</h4>
-                            <p className="text-sm text-muted-foreground">{provider.user.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(provider.status)}
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(provider.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
 

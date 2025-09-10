@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { usePersistedLike } from '../hooks/usePersistedLike';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -36,6 +37,13 @@ const ArtworkDetails = () => {
   const [commentLoading, setCommentLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  
+  // Use persistent like hook - use the id from URL params for consistency
+  const { likesCount, isLiked, toggleLike, likeLoading } = usePersistedLike(
+    id, // Use URL param id instead of artwork?._id for immediate availability
+    artwork?.likesCount || 0,
+    Boolean(artwork?.isLiked)
+  );
 
   useEffect(() => {
     // Get current user from localStorage
@@ -96,36 +104,24 @@ const ArtworkDetails = () => {
     }
   };
 
-  const handleLike = async () => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
+  // Update artwork state when like state changes
+  useEffect(() => {
+    if (artwork) {
+      setArtwork(prev => ({
+        ...prev,
+        likesCount,
+        isLiked
+      }));
     }
+  }, [likesCount, isLiked]); // Removed artwork from dependencies to prevent infinite loop
 
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/artworks/${id}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ type: 'like' })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setArtwork(prev => ({
-          ...prev,
-          likesCount: data.likesCount,
-          isLiked: data.isLiked
-        }));
-      }
-    } catch (err) {
-      console.error('Like error:', err);
+  // Ensure the hook has the latest artwork data when it loads
+  useEffect(() => {
+    if (artwork && artwork._id === id) {
+      // Artwork has loaded, the hook should now have the correct data
+      // The hook will automatically sync with persisted state or use server state
     }
-  };
+  }, [artwork, id]);
 
   const handleAddComment = async (e) => {
     e.preventDefault();
@@ -323,13 +319,14 @@ const ArtworkDetails = () => {
                     <div className="flex items-center gap-4">
                       <Button
                         variant="ghost"
-                        onClick={handleLike}
-                        className={`${artwork.isLiked ? 'text-red-500' : ''}`}
+                        onClick={toggleLike}
+                        disabled={likeLoading}
+                        className={`transition-colors duration-200 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
                       >
                         <Heart 
-                          className={`h-5 w-5 mr-2 ${artwork.isLiked ? 'fill-current' : ''}`} 
+                          className={`h-5 w-5 mr-2 transition-all duration-200 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} 
                         />
-                        {artwork.likesCount}
+                        {likesCount}
                       </Button>
                       
                       <div className="flex items-center">

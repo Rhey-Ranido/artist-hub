@@ -15,17 +15,29 @@ import {
 import { authenticateToken } from "../middlewares/auth.middleware.js";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 const router = express.Router();
+
+// Ensure upload directories exist
+const ensureDirectoryExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
 
 // Configure multer for artwork image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/artworks/');
+    const uploadPath = 'uploads/artworks/';
+    ensureDirectoryExists(uploadPath);
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const extension = path.extname(file.originalname);
+    const baseName = path.basename(file.originalname, extension).replace(/\s+/g, '-');
+    cb(null, `${baseName}-${uniqueSuffix}${extension}`);
   }
 });
 
@@ -35,14 +47,10 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024 // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-      return cb(null, true);
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error('Only image files are allowed'), false);
     }
   }
 });

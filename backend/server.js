@@ -24,6 +24,7 @@ import userRoutes from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import tutorialRoutes from "./routes/tutorial.route.js";
 import notificationRoutes from "./routes/notification.route.js";
+import statsRoutes from "./routes/stats.routes.js";
 
 dotenv.config();
 const app = express();
@@ -39,6 +40,8 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Content-Type"],
+    optionsSuccessStatus: 200
   })
 );
 
@@ -47,8 +50,13 @@ app.use(express.json());
 // middlewares
 app.use(requestLogger);
 
-// Static file serving for uploaded images
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// Static file serving for uploaded images with CORS headers
+app.use("/uploads", (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+}, express.static(path.join(process.cwd(), "uploads")));
 
 // MongoDB + HTTP server + Socket.IO
 const server = http.createServer(app);
@@ -87,6 +95,7 @@ mongoose
     app.use("/api/admin", adminRoutes);
     app.use("/api/tutorials", tutorialRoutes);
     app.use("/api/notifications", notificationRoutes);
+    app.use("/api/stats", statsRoutes);
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);

@@ -10,14 +10,53 @@ export const createArtwork = async (req, res) => {
   try {
     const { title, description, canvasData, tags, dimensions, tools, colors, isPublic, tutorialId } = req.body;
     const userId = req.user.id;
+    // Initialize tutorial progression variables in outer scope to avoid ReferenceError
+    let levelUp = false;
+    let newLevel = undefined;
+    let levelUpMessage = "";
 
-    console.log("Received artwork data:", { title, description, canvasData: canvasData ? "present" : "missing", tags, dimensions, tools, colors, isPublic });
+    console.log("Received artwork data:", { 
+      title, 
+      description, 
+      canvasData: canvasData ? `present (${canvasData.length} chars)` : "missing", 
+      tags, 
+      dimensions, 
+      tools, 
+      colors, 
+      isPublic,
+      userId,
+      hasFile: !!req.file
+    });
 
     // Validate required fields
-    if (!title || !canvasData || !dimensions) {
+    if (!title || !description || !canvasData || !dimensions) {
       return res.status(400).json({ 
         success: false, 
-        message: "Title, canvas data, and dimensions are required" 
+        message: "Title, description, canvas data, and dimensions are required" 
+      });
+    }
+
+    // Validate title length
+    if (title.length > 100) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Title must be 100 characters or less" 
+      });
+    }
+
+    // Validate description length
+    if (description && description.length > 1000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Description must be 1000 characters or less" 
+      });
+    }
+
+    // Validate canvasData format (should be base64 data URL)
+    if (!canvasData.startsWith('data:image/')) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid canvas data format" 
       });
     }
 
@@ -32,6 +71,22 @@ export const createArtwork = async (req, res) => {
       parsedDimensions = dimensions ? JSON.parse(dimensions) : {};
       parsedTools = tools ? JSON.parse(tools) : [];
       parsedColors = colors ? JSON.parse(colors) : [];
+      
+      // Validate dimensions object
+      if (!parsedDimensions.width || !parsedDimensions.height) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Dimensions must include width and height" 
+        });
+      }
+      
+      // Validate dimensions are positive numbers
+      if (parsedDimensions.width <= 0 || parsedDimensions.height <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Dimensions must be positive numbers" 
+        });
+      }
     } catch (parseError) {
       console.error("JSON parsing error:", parseError);
       return res.status(400).json({ 
@@ -69,9 +124,9 @@ export const createArtwork = async (req, res) => {
         user.completedTutorials.push(tutorialId);
         
         // Check if user should level up based on their current level
-        let levelUp = false;
-        let newLevel = user.level;
-        let levelUpMessage = "";
+        levelUp = false;
+        newLevel = user.level;
+        levelUpMessage = "";
 
         if (user.level === 'beginner') {
           const completedCount = user.completedTutorials.length;
@@ -130,6 +185,8 @@ export const getArtworkFeed = async (req, res) => {
     const sortBy = req.query.sortBy || "createdAt";
     const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
 
+    console.log('Artwork feed request:', { page, limit, skip, sortBy, sortOrder });
+
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder;
 
@@ -140,12 +197,15 @@ export const getArtworkFeed = async (req, res) => {
       .limit(limit)
       .lean();
 
+    console.log('Found artworks:', artworks.length);
+
     // Construct full URLs for artwork images
     const host = req.get('host') || 'localhost:5000';
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
       imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
-      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+      // canvasData is already a base64 data URL, don't modify it
+      canvasData: artwork.canvasData || null
     }));
 
     const total = await Artwork.countDocuments({ isPublic: true });
@@ -265,7 +325,8 @@ export const getUserArtworks = async (req, res) => {
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
       imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
-      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+      // canvasData is already a base64 data URL, don't modify it
+      canvasData: artwork.canvasData || null
     }));
 
     const total = await Artwork.countDocuments(query);
@@ -631,7 +692,8 @@ export const getPostedArtworks = async (req, res) => {
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
       imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
-      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+      // canvasData is already a base64 data URL, don't modify it
+      canvasData: artwork.canvasData || null
     }));
 
     const total = await Artwork.countDocuments(query);

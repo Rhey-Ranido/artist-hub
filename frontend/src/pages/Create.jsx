@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useLocation, useBeforeUnload, useBlocker } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ArtCanvas from '../components/ArtCanvas';
@@ -17,6 +17,8 @@ const Create = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpData, setLevelUpData] = useState(null);
+  const [isDirty, setIsDirty] = useState(false); // Start clean, set to dirty when canvas changes
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   
   // Get tutorial data from navigation state
   const tutorialData = location.state;
@@ -25,6 +27,36 @@ const Create = () => {
   const tutorialId = tutorialData?.tutorialId;
 
   const API_BASE_URL = 'http://localhost:5000/api';
+
+  // Handle browser/tab close
+  useBeforeUnload(
+    useCallback(
+      (event) => {
+        if (isDirty) {
+          event.preventDefault();
+          return (event.returnValue = "You have unsaved changes. Are you sure you want to leave?");
+        }
+      },
+      [isDirty]
+    )
+  );
+
+  // Block internal navigation when dirty
+  const blocker = useBlocker(
+    useCallback(
+      ({ currentLocation, nextLocation }) => 
+        isDirty && currentLocation.pathname !== nextLocation.pathname,
+      [isDirty]
+    )
+  );
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      setShowLeaveConfirm(true);
+    } else {
+      setShowLeaveConfirm(false);
+    }
+  }, [blocker.state]);
 
   const handleSave = async (artworkData, imageBlob) => {
     try {
@@ -65,11 +97,17 @@ const Create = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to save artwork');
+        console.error('Artwork creation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: data
+        });
+        throw new Error(data.message || `Failed to save artwork (${response.status})`);
       }
 
       setSuccess('Artwork saved successfully!');
       setError('');
+      setIsDirty(false);
 
       // Handle tutorial completion and level up
       if (data.tutorialCompleted && data.levelUp) {
@@ -101,6 +139,17 @@ const Create = () => {
     }
   };
 
+  const confirmLeave = useCallback(() => {
+    setShowLeaveConfirm(false);
+    setIsDirty(false);
+    blocker.proceed?.();
+  }, [blocker]);
+
+  const stayOnPage = useCallback(() => {
+    setShowLeaveConfirm(false);
+    blocker.reset?.();
+  }, [blocker]);
+
   const nextStep = () => {
     if (currentStepIndex < tutorialSteps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
@@ -123,107 +172,117 @@ const Create = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Create New Artwork</h1>
           <p className="text-muted-foreground">
             Use our digital canvas to create your masterpiece and share it with the community.
           </p>
-          {tutorialTitle && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-                <span className="font-semibold text-blue-800">Following Tutorial:</span>
-              </div>
-              <p className="text-blue-700">{tutorialTitle}</p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main Canvas Area */}
+          <div className={`${tutorialSteps.length > 0 ? 'lg:w-2/3' : 'w-full max-w-5xl mx-auto'}`}>
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {success && (
+              <Alert className="mb-6 border-green-200 bg-green-50 text-green-800">
+                <AlertDescription>{success}</AlertDescription>
+              </Alert>
+            )}
+
+            <ArtCanvas onSave={handleSave} onDirtyChange={setIsDirty} />
+          </div>
+
+          {/* Tutorial Section - Only shown when there are tutorial steps */}
+          {tutorialSteps.length > 0 && (
+            <div className="lg:w-1/3">
+              {tutorialTitle && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                    <span className="font-semibold text-blue-800">Following Tutorial:</span>
+                  </div>
+                  <p className="text-blue-700">{tutorialTitle}</p>
+                </div>
+              )}
+              <Card className="sticky top-4">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Tutorial Step {currentStepIndex + 1} of {tutorialSteps.length}
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-lg mb-2">
+                        Step {sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}: {sortedSteps[currentStepIndex]?.title}
+                      </h4>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {sortedSteps[currentStepIndex]?.description}
+                      </p>
+                    </div>
+                    
+                    {sortedSteps[currentStepIndex]?.imageUrl && (
+                      <div className="mt-4">
+                        <img
+                          src={`http://localhost:5000${sortedSteps[currentStepIndex].imageUrl}`}
+                          alt={`Step ${sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}`}
+                          className="w-full rounded-lg shadow-md"
+                        />
+                      </div>
+                    )}
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between gap-2 mt-6">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={prevStep}
+                        disabled={currentStepIndex === 0}
+                        className="flex-1"
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={nextStep}
+                        disabled={currentStepIndex === tutorialSteps.length - 1}
+                        className="flex-1"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                    
+                    {/* Step Indicators */}
+                    <div className="flex justify-center gap-2 mt-4">
+                      {tutorialSteps.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentStepIndex(index)}
+                          className={`w-3 h-3 rounded-full transition-colors ${
+                            index === currentStepIndex 
+                              ? 'bg-blue-600' 
+                              : 'bg-gray-300 hover:bg-gray-400'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
-
-        {/* Tutorial Steps Slider */}
-        {tutorialSteps.length > 0 && (
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Tutorial Step {currentStepIndex + 1} of {tutorialSteps.length}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={prevStep}
-                    disabled={currentStepIndex === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={nextStep}
-                    disabled={currentStepIndex === tutorialSteps.length - 1}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">
-                    Step {sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}: {sortedSteps[currentStepIndex]?.title}
-                  </h4>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {sortedSteps[currentStepIndex]?.description}
-                  </p>
-                </div>
-                
-                {sortedSteps[currentStepIndex]?.imageUrl && (
-                  <div className="mt-4">
-                    <img
-                      src={`http://localhost:5000${sortedSteps[currentStepIndex].imageUrl}`}
-                      alt={`Step ${sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}`}
-                      className="w-full max-w-md rounded-lg shadow-md mx-auto"
-                    />
-                  </div>
-                )}
-              </div>
-              
-              {/* Step Indicators */}
-              <div className="flex justify-center gap-2 mt-6">
-                {tutorialSteps.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentStepIndex(index)}
-                    className={`w-3 h-3 rounded-full transition-colors ${
-                      index === currentStepIndex 
-                        ? 'bg-blue-600' 
-                        : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className="mb-6 border-green-200 bg-green-50 text-green-800">
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
-
-        <ArtCanvas onSave={handleSave} />
       </div>
 
       <Footer />
@@ -233,6 +292,20 @@ const Create = () => {
         onClose={() => setShowLevelUpModal(false)}
         levelUpData={levelUpData}
       />
+
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative bg-background border rounded-lg shadow-lg w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Leave this page?</h3>
+            <p className="text-muted-foreground mb-6">You have unsaved artwork. Are you sure you want to leave?</p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={stayOnPage}>Stay</Button>
+              <Button onClick={confirmLeave}>Leave</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

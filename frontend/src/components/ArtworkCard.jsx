@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Heart, MessageCircle, Eye, Palette } from 'lucide-react';
+import { usePersistedLike } from '../hooks/usePersistedLike';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -28,46 +29,24 @@ export default function ArtworkCard({
 }) {
   const initialLikes = useMemo(() => artwork?.likesCount || 0, [artwork]);
   const initialIsLiked = useMemo(() => Boolean(artwork?.isLiked), [artwork]);
-  const [likesCount, setLikesCount] = useState(initialLikes);
-  const [isLiked, setIsLiked] = useState(initialIsLiked);
-  const [likeLoading, setLikeLoading] = useState(false);
+  
+  // Use persistent like hook
+  const { likesCount, isLiked, toggleLike, likeLoading } = usePersistedLike(
+    artwork?._id,
+    initialLikes,
+    initialIsLiked
+  );
 
-  const imageSrc = artwork?.imageUrl || artwork?.canvasData || '';
+  const imageSrc = artwork?.imageUrl ? `http://localhost:5000${artwork.imageUrl}` : artwork?.canvasData || '';
   const commentCount = artwork?.commentsCount || 0;
   const views = artwork?.views || 0;
 
-  const handleLike = async (e) => {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      return;
+  // Handle onChange callback when like state changes
+  React.useEffect(() => {
+    if (onChange) {
+      onChange({ likesCount, isLiked });
     }
-    try {
-      setLikeLoading(true);
-      const response = await fetch(`http://localhost:5000/api/artworks/${artwork._id}/like`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type: 'like' }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setLikesCount(data.likesCount ?? 0);
-        setIsLiked(Boolean(data.isLiked));
-        if (onChange) {
-          onChange({ likesCount: data.likesCount, isLiked: data.isLiked });
-        }
-      }
-    } catch (err) {
-      console.error('Toggle like error:', err);
-    } finally {
-      setLikeLoading(false);
-    }
-  };
+  }, [likesCount, isLiked, onChange]);
 
   return (
     <Card className={`overflow-hidden hover:shadow-lg transition-shadow ${className}`}>
@@ -79,8 +58,12 @@ export default function ArtworkCard({
               alt={artwork.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextSibling.style.display = 'flex';
+                if (e.currentTarget) {
+                  e.currentTarget.style.display = 'none';
+                }
+                if (e.currentTarget?.nextSibling) {
+                  e.currentTarget.nextSibling.style.display = 'flex';
+                }
               }}
             />
           ) : null}
@@ -115,8 +98,12 @@ export default function ArtworkCard({
                   alt={artwork.artist.username}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextSibling.style.display = 'flex';
+                    if (e.currentTarget) {
+                      e.currentTarget.style.display = 'none';
+                    }
+                    if (e.currentTarget?.nextSibling) {
+                      e.currentTarget.nextSibling.style.display = 'flex';
+                    }
                   }}
                 />
               ) : (
@@ -163,11 +150,11 @@ export default function ArtworkCard({
             <Button
               size="sm"
               variant="ghost"
-              onClick={handleLike}
+              onClick={toggleLike}
               disabled={likeLoading}
-              className={`${isLiked ? 'text-red-500' : ''}`}
+              className={`transition-colors duration-200 ${isLiked ? 'text-red-500 hover:text-red-600' : 'hover:text-red-500'}`}
             >
-              <Heart className={`h-4 w-4 mr-1 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`h-4 w-4 mr-1 transition-all duration-200 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
               {likesCount}
             </Button>
             {showViews && (

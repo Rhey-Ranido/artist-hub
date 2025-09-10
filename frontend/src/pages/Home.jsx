@@ -13,6 +13,11 @@ export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [artworks, setArtworks] = useState([]);
+  const [stats, setStats] = useState({
+    artworksCount: 0,
+    activeArtistsCount: 0,
+    likesCount: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -20,19 +25,39 @@ export default function Home() {
 
   useEffect(() => {
     fetchArtworkFeed();
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/stats/platform`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch platform stats');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching platform stats:', error);
+    }
+  };
 
   const fetchArtworkFeed = async () => {
     try {
       setLoading(true);
       setError('');
 
+      console.log('Fetching artworks from:', `${API_BASE_URL}/artworks/feed?limit=6`);
       const response = await fetch(`${API_BASE_URL}/artworks/feed?limit=6`);
+      console.log('Response status:', response.status);
       if (!response.ok) {
         throw new Error('Failed to fetch artworks');
       }
 
       const data = await response.json();
+      console.log('Received artworks:', data);
       setArtworks(data.artworks || []);
     } catch (error) {
       console.error('Error fetching artwork feed:', error);
@@ -59,7 +84,7 @@ export default function Home() {
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
               {user ? (
                 <>
-                  Welcome back,{' '}
+                  Welcome,{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
                     {user.firstName || user.username}
                   </span>
@@ -152,30 +177,24 @@ export default function Home() {
       {/* Stats Section */}
       <section className="py-16 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-purple-600 mb-2">
-                {artworks.length > 0 ? artworks.length + '+' : '0'}
+                {stats.artworksCount}
               </div>
               <div className="text-muted-foreground">Artworks Created</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                {artworks.length > 0 ? Math.floor(artworks.length * 1.5) + '+' : '0'}
+                {stats.activeArtistsCount}
               </div>
               <div className="text-muted-foreground">Active Artists</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-green-600 mb-2">
-                {artworks.length > 0 ? Math.floor(artworks.length * 2.3) + '+' : '0'}
+                {stats.likesCount}
               </div>
               <div className="text-muted-foreground">Likes Given</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-pink-600 mb-2">
-                {artworks.length > 0 ? Math.floor(artworks.length * 3.1) + '+' : '0'}
-              </div>
-              <div className="text-muted-foreground">Comments Shared</div>
             </div>
           </div>
         </div>
@@ -214,7 +233,7 @@ export default function Home() {
               <div className="text-center mt-8">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/search')}
+                  onClick={() => navigate('/artworks')}
                   className="px-8"
                 >
                   View All Artworks

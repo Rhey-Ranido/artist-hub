@@ -19,7 +19,7 @@ import Canvas from "./Canvas";
 import TextModal from "./TextModal";
 import ArtworkDetails from "./ArtworkDetails";
 
-const ArtCanvas = ({ onSave, initialData = null }) => {
+const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => {
   const canvasRef = useRef(null);
   const gridCanvasRef = useRef(null);
   const previewCanvasRef = useRef(null);
@@ -2864,12 +2864,18 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
       }
 
       saveToHistory();
+      onDirtyChange(true); // Mark as dirty after any drawing operation
     }
   };
 
   const handleSave = async () => {
     if (!title.trim()) {
       setError("Please enter a title for your artwork");
+      return;
+    }
+
+    if (!description.trim()) {
+      setError("Please enter a description for your artwork");
       return;
     }
 
@@ -2904,6 +2910,7 @@ const ArtCanvas = ({ onSave, initialData = null }) => {
 
       if (onSave) {
         await onSave(artworkData, imageBlob);
+        onDirtyChange(false); // Clear dirty state after successful save
       }
     } catch (err) {
       setError("Failed to save artwork. Please try again.");

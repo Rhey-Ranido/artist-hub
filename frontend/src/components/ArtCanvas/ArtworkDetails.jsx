@@ -56,7 +56,7 @@ const ArtworkDetails = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor="description">Description *</Label>
           <Textarea
             id="description"
             value={description}
@@ -81,7 +81,7 @@ const ArtworkDetails = ({
         <div className="pt-4 flex justify-center md:justify-start">
           <Button
             onClick={onSave}
-            disabled={isSaving || !title.trim()}
+            disabled={isSaving || !title.trim() || !description.trim()}
             className="w-full md:w-auto min-w-[140px]"
           >
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -221,10 +221,6 @@ const MyArtworks = () => {
                 <MessageCircle className="h-3 w-3" />
                 <span>{artwork.commentsCount || 0}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                <span>{artwork.views || 0}</span>
-              </div>
             </div>
             
             <Button

@@ -67,6 +67,27 @@ const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => 
   const [tags, setTags] = useState("");
   const [isPublic, setIsPublic] = useState(true);
 
+  // Wrapper functions to track form changes as dirty
+  const handleTitleChange = (value) => {
+    setTitle(value);
+    onDirtyChange(true);
+  };
+
+  const handleDescriptionChange = (value) => {
+    setDescription(value);
+    onDirtyChange(true);
+  };
+
+  const handleTagsChange = (value) => {
+    setTags(value);
+    onDirtyChange(true);
+  };
+
+  const handlePublicChange = (value) => {
+    setIsPublic(value);
+    onDirtyChange(true);
+  };
+
   const colors = [
     "#000000",
     "#FFFFFF",
@@ -749,6 +770,7 @@ const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => 
       setShapes((prev) => prev.filter((shape) => shape.id !== selectedShape));
       setSelectedShape(null);
       saveToHistory();
+      onDirtyChange(true); // Mark as dirty after deleting shape
     }
   };
 
@@ -2164,6 +2186,7 @@ const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => 
       setTextInput("");
       setShowTextModal(false);
       saveToHistory();
+      onDirtyChange(true); // Mark as dirty after adding text
     }
   };
 
@@ -2684,6 +2707,7 @@ const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => 
       setIsDrawing(false);
       setLastDrawPos(null);
       saveToHistory();
+      onDirtyChange(true); // Mark as dirty after drawing
     } else if (isDrawingShape && startPoint && e) {
       const pos = getMousePos(e);
 
@@ -2846,6 +2870,7 @@ const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => 
       setIsDrawingShape(false);
       setStartPoint(null);
       saveToHistory();
+      onDirtyChange(true); // Mark as dirty after drawing shape
     } else if (isDragging || isResizing) {
       // Save transformation history when operation completes
       if (originalShapes.length > 0) {
@@ -2991,13 +3016,13 @@ const ArtCanvas = ({ onSave, initialData = null, onDirtyChange = () => {} }) => 
       <div>
         <ArtworkDetails
           title={title}
-          setTitle={setTitle}
+          setTitle={handleTitleChange}
           description={description}
-          setDescription={setDescription}
+          setDescription={handleDescriptionChange}
           tags={tags}
-          setTags={setTags}
+          setTags={handleTagsChange}
           isPublic={isPublic}
-          setIsPublic={setIsPublic}
+          setIsPublic={handlePublicChange}
           error={error}
           isSaving={isSaving}
           onSave={handleSave}

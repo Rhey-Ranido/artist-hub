@@ -197,11 +197,6 @@ const Profile = () => {
                   <span className="font-medium">{profileUser.likesReceived || 0}</span>
                   <span className="text-muted-foreground">likes</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium">{profileUser.views || 0}</span>
-                  <span className="text-muted-foreground">views</span>
-                </div>
               </div>
 
               {/* Bio */}

@@ -21,7 +21,8 @@ import {
   Loader2,
   Calendar,
   Palette,
-  Bookmark
+  Bookmark,
+  User
 } from 'lucide-react';
 
 const ArtworkDetails = () => {
@@ -259,12 +260,6 @@ const ArtworkDetails = () => {
                     alt={artwork.title}
                     className="w-full h-auto rounded-t-lg"
                   />
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <Badge variant="secondary" className="bg-black/50 text-white">
-                      <Eye className="h-3 w-3 mr-1" />
-                      {artwork.views}
-                    </Badge>
-                  </div>
                 </div>
                 
                 <div className="p-6">
@@ -358,13 +353,27 @@ const ArtworkDetails = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
-                    <img
-                      src={artwork.artist.profileImage 
-                        ? `http://localhost:5000/uploads/${artwork.artist.profileImage}` 
-                        : '/default-avatar.png'
-                      }
-                      alt={artwork.artist.username}
-                    />
+                    {artwork.artist.profileImage ? (
+                      <img
+                        src={`http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                        alt={artwork.artist.username}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          if (e.currentTarget) {
+                            e.currentTarget.style.display = 'none';
+                          }
+                          if (e.currentTarget?.nextSibling) {
+                            e.currentTarget.nextSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center"
+                      style={{ display: artwork.artist.profileImage ? 'none' : 'flex' }}
+                    >
+                      <User className="h-6 w-6" />
+                    </div>
                   </Avatar>
                   <div>
                     <Link 

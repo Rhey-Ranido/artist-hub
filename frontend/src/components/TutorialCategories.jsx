@@ -86,13 +86,14 @@ const TutorialCategories = ({ tutorials, userLevel, onViewTutorial }) => {
             </CardTitle>
           </CardHeader>
           <CardContent className={`pt-6 ${beginnerStyles.expanded}`}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {groupedTutorials['beginner']?.map((tutorial) => (
-                <TutorialCard
-                  key={tutorial._id}
-                  tutorial={tutorial}
-                  onView={() => onViewTutorial(tutorial)}
-                />
+                <div key={tutorial._id} className="flex-shrink-0 w-80">
+                  <TutorialCard
+                    tutorial={tutorial}
+                    onView={() => onViewTutorial(tutorial)}
+                  />
+                </div>
               ))}
             </div>
           </CardContent>
@@ -137,13 +138,14 @@ const TutorialCategories = ({ tutorials, userLevel, onViewTutorial }) => {
             </CardHeader>
             <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
               <CardContent className={`pt-6 ${getLevelStyles(category).expanded}`}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {tutorials.map((tutorial) => (
-                    <TutorialCard
-                      key={tutorial._id}
-                      tutorial={tutorial}
-                      onView={() => onViewTutorial(tutorial)}
-                    />
+                    <div key={tutorial._id} className="flex-shrink-0 w-80">
+                      <TutorialCard
+                        tutorial={tutorial}
+                        onView={() => onViewTutorial(tutorial)}
+                      />
+                    </div>
                   ))}
                 </div>
               </CardContent>

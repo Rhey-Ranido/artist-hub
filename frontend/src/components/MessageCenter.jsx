@@ -741,10 +741,6 @@ const MessageCenter = () => {
                         
                         {/* Status indicators */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-gray-500">Online</span>
-                          </div>
                           {chat.latestMessage && (
                             <div className="flex items-center space-x-1">
                               {chat.latestMessage.sender._id === currentUser?.id ? (
@@ -869,7 +865,6 @@ const MessageCenter = () => {
                           : getOtherUser(selectedChat)?.email || 'Unknown User'
                         }
                       </h3>
-                      <p className="text-sm text-gray-500">Online</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -878,9 +873,6 @@ const MessageCenter = () => {
                     </Button>
                     <Button variant="ghost" size="sm" className="hidden sm:flex">
                       <Video className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Info className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

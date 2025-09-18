@@ -37,7 +37,7 @@ export default function ArtworkCard({
     initialIsLiked
   );
 
-  const imageSrc = artwork?.imageUrl ? `http://localhost:5000${artwork.imageUrl}` : artwork?.canvasData || '';
+  const imageSrc = artwork?.imageUrl || artwork?.canvasData || '';
   const commentCount = artwork?.commentsCount || 0;
   const views = artwork?.views || 0;
 
@@ -117,12 +117,6 @@ export default function ArtworkCard({
             <Link to={`/profile/${artwork.artist?._id}`} className="hover:underline">
               {artwork.artist?.username}
             </Link>
-            {showDate && (
-              <>
-                <span>•</span>
-                <span>{formatTimeAgo(artwork.createdAt)}</span>
-              </>
-            )}
           </div>
         )}
 
@@ -157,12 +151,6 @@ export default function ArtworkCard({
               <Heart className={`h-4 w-4 mr-1 transition-all duration-200 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
               {likesCount}
             </Button>
-            {showViews && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Eye className="h-4 w-4" />
-                <span>{views}</span>
-              </div>
-            )}
             <div className="flex items-center gap-1 text-muted-foreground">
               <MessageCircle className="h-4 w-4" />
               <span>{commentCount}</span>

@@ -538,21 +538,32 @@ export const searchArtworks = async (req, res) => {
     sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
 
     const artworks = await Artwork.find(searchQuery)
-      .populate('artist', 'username profileImage')
+      .populate('artist', 'username profileImage firstName lastName')
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
       .lean();
 
+    // Construct full URLs for artwork images
+    const host = req.get('host') || 'localhost:5000';
+    const artworksWithUrls = artworks.map(artwork => ({
+      ...artwork,
+      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      // canvasData is already a base64 data URL, don't modify it
+      canvasData: artwork.canvasData || null
+    }));
+
     const total = await Artwork.countDocuments(searchQuery);
 
     res.json({
       success: true,
-      artworks,
+      artworks: artworksWithUrls,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
-        totalArtworks: total
+        totalArtworks: total,
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1
       }
     });
   } catch (error) {

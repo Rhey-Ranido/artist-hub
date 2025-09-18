@@ -6,7 +6,7 @@ import ArtCanvas from '../components/ArtCanvas';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, BookOpen, Check, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen, Check, Loader2, AlertTriangle } from 'lucide-react';
 import LevelUpModal from '../components/LevelUpModal';
 
 const Create = () => {
@@ -297,11 +297,20 @@ const Create = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative bg-background border rounded-lg shadow-lg w-full max-w-md mx-4 p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-2">Leave this page?</h3>
-            <p className="text-muted-foreground mb-6">You have unsaved artwork. Are you sure you want to leave?</p>
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="h-6 w-6 text-amber-500" />
+              <h3 className="text-lg font-semibold text-foreground">Leave this page?</h3>
+            </div>
+            <p className="text-muted-foreground mb-6">
+              You have unsaved artwork. If you leave now, your changes will be lost.
+            </p>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={stayOnPage}>Stay</Button>
-              <Button onClick={confirmLeave}>Leave</Button>
+              <Button variant="outline" onClick={stayOnPage}>
+                Stay on page
+              </Button>
+              <Button variant="destructive" onClick={confirmLeave}>
+                Leave anyway
+              </Button>
             </div>
           </div>
         </div>

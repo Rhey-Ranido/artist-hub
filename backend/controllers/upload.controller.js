@@ -3,6 +3,7 @@ import Provider from "../models/Provider.js";
 import Service from "../models/Service.js";
 import { deleteFile, getFileUrl } from "../utils/uploadConfig.js";
 import path from 'path';
+import fs from 'fs';
 
 // Upload tutorial step image
 export const uploadTutorialStepImage = async (req, res) => {
@@ -30,49 +31,96 @@ export const uploadTutorialStepImage = async (req, res) => {
 // Upload user profile image
 export const uploadUserProfileImage = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+    if (!req.base64Image) {
+      return res.status(400).json({ message: 'No image data processed' });
     }
 
     const userId = req.user.id;
-    const fileName = `profiles/${req.file.filename}`;
 
-    // Get old profile image to delete it
-    const user = await User.findById(userId);
-    const oldImage = user?.profileImage;
-
-    // Update user with new profile image
+    // Update user with new profile image base64 data
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { profileImage: fileName },
+      { 
+        profileImageData: req.base64Image,
+        profileImage: null // Clear old file path if exists
+      },
       { new: true, select: '-password' }
     );
 
     if (!updatedUser) {
-      // Delete uploaded file if user update failed
-      deleteFile(req.file.path);
       return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Delete old image if it exists
-    if (oldImage) {
-      deleteFile(path.join('uploads', oldImage));
     }
 
     res.status(200).json({
       message: 'Profile image uploaded successfully',
       user: {
         ...updatedUser.toObject(),
-        profileImageUrl: getFileUrl(req, fileName)
+        profileImageUrl: req.base64Image // Return base64 data directly
       }
     });
 
   } catch (error) {
-    // Delete uploaded file on error
-    if (req.file) {
-      deleteFile(req.file.path);
-    }
     console.error('Error uploading profile image:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Simple upload user profile image without processing (fallback)
+export const uploadUserProfileImageSimple = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const userId = req.user.id;
+    const filePath = req.file.path;
+
+    // Convert to base64 without compression
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64String = imageBuffer.toString('base64');
+    
+    // Determine MIME type
+    const extension = req.file.originalname.toLowerCase().split('.').pop();
+    let mimeType = 'image/jpeg';
+    if (extension === 'png') mimeType = 'image/png';
+    else if (extension === 'gif') mimeType = 'image/gif';
+    else if (extension === 'webp') mimeType = 'image/webp';
+    
+    const base64Data = `data:${mimeType};base64,${base64String}`;
+
+    // Update user with new profile image base64 data
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { 
+        profileImageData: base64Data,
+        profileImage: null
+      },
+      { new: true, select: '-password' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Clean up the temporary file
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.status(200).json({
+      message: 'Profile image uploaded successfully',
+      user: {
+        ...updatedUser.toObject(),
+        profileImageUrl: base64Data
+      }
+    });
+
+  } catch (error) {
+    // Clean up file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    console.error('Error uploading profile image (simple):', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

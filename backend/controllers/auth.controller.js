@@ -270,10 +270,10 @@ export const getMe = async (req, res) => {
       );
     }
 
-    // Construct profile image URL if exists
-    const profileImageUrl = user.profileImage 
+    // Construct profile image URL if exists (for backward compatibility)
+    const profileImageUrl = user.profileImageData || (user.profileImage 
       ? `${req.protocol}://${req.get('host')}/uploads/${user.profileImage}`
-      : null;
+      : null);
 
     const successResponse = createSuccessResponse({
       message: 'User profile retrieved successfully',
@@ -287,6 +287,7 @@ export const getMe = async (req, res) => {
           lastName: user.lastName,
           bio: user.bio,
           profileImage: user.profileImage,
+          profileImageData: user.profileImageData,
           profileImageUrl: profileImageUrl,
           artworksCount: user.artworksCount,
           likesReceived: user.likesReceived,

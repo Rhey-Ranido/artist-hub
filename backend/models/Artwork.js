@@ -17,6 +17,10 @@ const artworkSchema = new mongoose.Schema(
       required: false,
       default: "",
     },
+    imageData: {
+      type: String, // Base64 encoded image data
+      required: false,
+    },
     canvasData: {
       type: String, // JSON string of canvas data for editing
       required: true,

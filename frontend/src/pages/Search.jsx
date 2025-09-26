@@ -115,9 +115,9 @@ const Search = () => {
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4 mb-4">
                           <Avatar className="h-16 w-16">
-                                                         {user?.profileImage ? (
+                                                         {user?.profileImageData || user?.profileImage ? (
                                <img
-                                 src={`http://localhost:5000/uploads/profiles/${user.profileImage}`}
+                                 src={user?.profileImageData || `http://localhost:5000/uploads/profiles/${user.profileImage}`}
                                  alt={user.username}
                                  className="w-full h-full object-cover"
                                />

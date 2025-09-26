@@ -1,6 +1,7 @@
 import express from "express";
 import { 
   createArtwork, 
+  createArtworkSimple,
   getArtworkFeed, 
   getArtworkById, 
   getUserArtworks,
@@ -13,6 +14,7 @@ import {
   getPostedArtworks
 } from "../controllers/artwork.controller.js";
 import { authenticateToken } from "../middlewares/auth.middleware.js";
+import { processArtworkImage } from "../middlewares/imageProcessing.middleware.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -62,7 +64,8 @@ router.get("/:id", getArtworkById);
 router.get("/user/:userId", getUserArtworks); // Supports both ID and username
 
 // Protected routes
-router.post("/", authenticateToken, upload.single('image'), createArtwork);
+router.post("/", authenticateToken, upload.single('image'), processArtworkImage, createArtwork);
+router.post("/simple", authenticateToken, upload.single('image'), createArtworkSimple);
 router.put("/:id", authenticateToken, updateArtwork);
 router.delete("/:id", authenticateToken, deleteArtwork);
 router.post("/:id/like", authenticateToken, toggleLike);

@@ -95,7 +95,7 @@ export const createArtwork = async (req, res) => {
       });
     }
 
-    // Create artwork with image URL if uploaded
+    // Create artwork with image data (base64 or URL)
     const artworkData = {
       title,
       description: description || "",
@@ -106,7 +106,8 @@ export const createArtwork = async (req, res) => {
       tools: parsedTools,
       colors: parsedColors,
       isPublic: isPublic === 'true' || isPublic === true,
-      imageUrl: req.file ? `/uploads/artworks/${req.file.filename}` : ""
+      imageData: req.base64Image || null, // Base64 image data from middleware
+      imageUrl: req.file && !req.base64Image ? `/uploads/artworks/${req.file.filename}` : "" // Fallback to file URL
     };
 
     const artwork = new Artwork(artworkData);
@@ -176,6 +177,136 @@ export const createArtwork = async (req, res) => {
   }
 };
 
+// Simple create artwork without processing middleware (fallback)
+export const createArtworkSimple = async (req, res) => {
+  try {
+    const { title, description, canvasData, tags, dimensions, tools, colors, isPublic, tutorialId } = req.body;
+    const userId = req.user.id;
+
+    console.log("Simple artwork creation:", { 
+      title, 
+      hasFile: !!req.file,
+      canvasDataLength: canvasData?.length 
+    });
+
+    // Validate required fields
+    if (!title || !description || !canvasData || !dimensions) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Title, description, canvas data, and dimensions are required" 
+      });
+    }
+
+    // Parse JSON strings from FormData
+    let parsedTags = [];
+    let parsedDimensions = {};
+    let parsedTools = [];
+    let parsedColors = [];
+
+    try {
+      parsedTags = tags ? JSON.parse(tags) : [];
+      parsedDimensions = dimensions ? JSON.parse(dimensions) : {};
+      parsedTools = tools ? JSON.parse(tools) : [];
+      parsedColors = colors ? JSON.parse(colors) : [];
+    } catch (parseError) {
+      console.error("JSON parsing error:", parseError);
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid JSON format in request data" 
+      });
+    }
+
+    let imageData = null;
+    
+    // Convert uploaded file to base64 if present
+    if (req.file) {
+      try {
+        const imageBuffer = fs.readFileSync(req.file.path);
+        const extension = req.file.originalname.toLowerCase().split('.').pop();
+        
+        // For PNG files (canvas exports), convert to JPEG with white background
+        if (extension === 'png') {
+          try {
+            // Try to use Sharp for proper background handling
+            const sharp = (await import('sharp')).default;
+            const processedBuffer = await sharp(imageBuffer)
+              .flatten({ background: { r: 255, g: 255, b: 255 } })
+              .jpeg({ quality: 90 })
+              .toBuffer();
+            
+            imageData = `data:image/jpeg;base64,${processedBuffer.toString('base64')}`;
+          } catch (sharpError) {
+            console.warn('Sharp processing failed in simple controller:', sharpError.message);
+            // Fall back to original PNG
+            const base64String = imageBuffer.toString('base64');
+            imageData = `data:image/png;base64,${base64String}`;
+          }
+        } else {
+          // For other formats, use as-is
+          const base64String = imageBuffer.toString('base64');
+          let mimeType = 'image/jpeg';
+          if (extension === 'gif') mimeType = 'image/gif';
+          else if (extension === 'webp') mimeType = 'image/webp';
+          
+          imageData = `data:${mimeType};base64,${base64String}`;
+        }
+
+        // Clean up the temporary file
+        fs.unlinkSync(req.file.path);
+      } catch (fileError) {
+        console.error("File processing error:", fileError);
+        // Continue without image data
+      }
+    }
+
+    // Create artwork
+    const artworkData = {
+      title,
+      description: description || "",
+      canvasData,
+      tags: parsedTags,
+      artist: userId,
+      dimensions: parsedDimensions,
+      tools: parsedTools,
+      colors: parsedColors,
+      isPublic: isPublic === 'true' || isPublic === true,
+      imageData: imageData,
+      imageUrl: ""
+    };
+
+    const artwork = new Artwork(artworkData);
+    await artwork.save();
+
+    // Update user's artwork count
+    await User.findByIdAndUpdate(userId, {
+      $inc: { artworksCount: 1 }
+    });
+
+    // Populate artist info for response
+    await artwork.populate('artist', 'username profileImage profileImageData firstName lastName');
+
+    res.status(201).json({
+      success: true,
+      message: "Artwork created successfully",
+      artwork: {
+        ...artwork.toObject(),
+        imageUrl: imageData || artwork.imageUrl
+      }
+    });
+
+  } catch (error) {
+    // Clean up file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    console.error("Create artwork simple error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+
 // Get artwork feed (public artworks)
 export const getArtworkFeed = async (req, res) => {
   try {
@@ -191,7 +322,7 @@ export const getArtworkFeed = async (req, res) => {
     sortOptions[sortBy] = sortOrder;
 
     const artworks = await Artwork.find({ isPublic: true })
-      .populate('artist', 'username profileImage firstName lastName')
+      .populate('artist', 'username profileImage profileImageData firstName lastName')
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)

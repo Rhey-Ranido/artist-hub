@@ -77,13 +77,26 @@ const ProfileImageUpload = ({
         ? `${API_BASE_URL}/upload/profile/provider`
         : `${API_BASE_URL}/upload/profile/user`;
 
-      const response = await fetch(endpoint, {
+      let response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: formData,
       });
+
+      // If the main endpoint fails, try the simple fallback
+      if (!response.ok && type === 'user') {
+        console.log('Main upload failed, trying fallback endpoint...');
+        const fallbackEndpoint = `${API_BASE_URL}/upload/profile/user/simple`;
+        response = await fetch(fallbackEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`,
+          },
+          body: formData,
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -93,7 +106,7 @@ const ProfileImageUpload = ({
       const data = await response.json();
       console.log('Upload response:', data);
       
-      // Update preview with actual uploaded image URL
+      // Update preview with actual uploaded image URL (now base64)
       const imageUrl = type === 'provider' 
         ? data.provider?.profileImageUrl
         : data.user?.profileImageUrl;

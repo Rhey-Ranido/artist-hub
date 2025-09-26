@@ -323,7 +323,7 @@ const AdminArtworkDetail = () => {
             <CardContent>
               <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                 <img
-                  src={`http://localhost:5000${artwork.imageUrl}`}
+                  src={artwork.imageData || `http://localhost:5000${artwork.imageUrl}`}
                   alt={artwork.title}
                   className="w-full h-full object-cover"
                 />

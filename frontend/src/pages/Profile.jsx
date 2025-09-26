@@ -124,9 +124,9 @@ const Profile = () => {
             {/* Profile Image */}
             <div className="flex-shrink-0">
               <div className="relative">
-                                                 {profileUser.profileImageUrl || profileUser.profileImage ? (
+                                                 {profileUser.profileImageData || profileUser.profileImageUrl || profileUser.profileImage ? (
                   <img
-                    src={profileUser.profileImageUrl || `http://localhost:5000${profileUser.profileImage}`}
+                    src={profileUser.profileImageData || profileUser.profileImageUrl || `http://localhost:5000${profileUser.profileImage}`}
                     alt={`${profileUser.firstName} ${profileUser.lastName}`}
                     className="w-32 h-32 rounded-full object-cover border-4 border-background shadow-lg"
                     onError={(e) => {
@@ -138,7 +138,7 @@ const Profile = () => {
                     }}
                   />
                 ) : null}
-                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-4 border-background shadow-lg" style={{ display: profileUser.profileImageUrl || profileUser.profileImage ? 'none' : 'flex' }}>
+                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-4 border-background shadow-lg" style={{ display: profileUser.profileImageData || profileUser.profileImageUrl || profileUser.profileImage ? 'none' : 'flex' }}>
                    <User className="h-16 w-16 text-gray-400" />
                  </div>
                 {isOwnProfile && (

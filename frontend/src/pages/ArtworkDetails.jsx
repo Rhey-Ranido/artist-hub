@@ -256,7 +256,7 @@ const ArtworkDetails = () => {
               <CardContent className="p-0">
                 <div className="relative">
                   <img
-                    src={`http://localhost:5000${artwork.imageUrl}`}
+                    src={artwork.imageData || `http://localhost:5000${artwork.imageUrl}`}
                     alt={artwork.title}
                     className="w-full h-auto rounded-t-lg"
                   />
@@ -353,9 +353,9 @@ const ArtworkDetails = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
-                    {artwork.artist.profileImage ? (
+                    {artwork.artist.profileImageData || artwork.artist.profileImage ? (
                       <img
-                        src={`http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                        src={artwork.artist.profileImageData || `http://localhost:5000/uploads/${artwork.artist.profileImage}`}
                         alt={artwork.artist.username}
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -370,7 +370,7 @@ const ArtworkDetails = () => {
                     ) : null}
                     <div 
                       className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center"
-                      style={{ display: artwork.artist.profileImage ? 'none' : 'flex' }}
+                      style={{ display: artwork.artist.profileImageData || artwork.artist.profileImage ? 'none' : 'flex' }}
                     >
                       <User className="h-6 w-6" />
                     </div>

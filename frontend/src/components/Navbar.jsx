@@ -148,7 +148,7 @@ const Navbar = () => {
     const [imageLoaded, setImageLoaded] = useState(false);
     
     // Check for profile image URL in multiple possible locations
-    const profileImageUrl = user?.profileImageUrl || user?.profileImage;
+    const profileImageUrl = user?.profileImageData || user?.profileImageUrl || user?.profileImage;
     
     // Reset error state when user changes
     useEffect(() => {
@@ -160,6 +160,8 @@ const Navbar = () => {
     const isValidImageUrl = (url) => {
       if (!url) return false;
       if (typeof url !== 'string') return false;
+      // Check if it's base64 data
+      if (url.startsWith('data:image/')) return true;
       // Check if it's a valid URL format
       try {
         new URL(url);

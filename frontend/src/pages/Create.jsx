@@ -86,13 +86,25 @@ const Create = () => {
         formData.append('image', imageBlob, 'artwork.png');
       }
 
-      const response = await fetch('http://localhost:5000/api/artworks', {
+      let response = await fetch('http://localhost:5000/api/artworks', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
+
+      // If the main endpoint fails, try the simple fallback
+      if (!response.ok) {
+        console.log('Main artwork creation failed, trying fallback endpoint...');
+        response = await fetch('http://localhost:5000/api/artworks/simple', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+      }
 
       const data = await response.json();
 

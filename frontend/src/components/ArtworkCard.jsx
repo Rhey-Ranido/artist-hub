@@ -37,7 +37,7 @@ export default function ArtworkCard({
     initialIsLiked
   );
 
-  const imageSrc = artwork?.imageUrl || artwork?.canvasData || '';
+  const imageSrc = artwork?.imageData || artwork?.imageUrl || artwork?.canvasData || '';
   const commentCount = artwork?.commentsCount || 0;
   const views = artwork?.views || 0;
 
@@ -92,9 +92,9 @@ export default function ArtworkCard({
         {showAuthor && artwork?.artist && (
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
             <Avatar className="h-6 w-6">
-              {artwork.artist?.profileImage ? (
+              {artwork.artist?.profileImageData || artwork.artist?.profileImage ? (
                 <img
-                  src={`http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                  src={artwork.artist?.profileImageData || `http://localhost:5000/uploads/${artwork.artist.profileImage}`}
                   alt={artwork.artist.username}
                   className="w-full h-full object-cover"
                   onError={(e) => {

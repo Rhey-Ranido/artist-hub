@@ -1,8 +1,10 @@
 import express from "express";
 import { protect } from "../middlewares/auth.middleware.js";
 import { uploadSingle, uploadMultiple } from "../utils/uploadConfig.js";
+import { processProfileImage } from "../middlewares/imageProcessing.middleware.js";
 import {
   uploadUserProfileImage,
+  uploadUserProfileImageSimple,
   uploadProviderProfileImage,
   uploadServiceImages,
   deleteServiceImage,
@@ -17,7 +19,10 @@ const router = express.Router();
 router.use(protect);
 
 // User profile image upload
-router.post("/profile/user", uploadSingle('profile', 'image'), uploadUserProfileImage);
+router.post("/profile/user", uploadSingle('profile', 'image'), processProfileImage, uploadUserProfileImage);
+
+// Alternative user profile image upload without processing middleware (fallback)
+router.post("/profile/user/simple", uploadSingle('profile', 'image'), uploadUserProfileImageSimple);
 
 // Provider profile image upload
 router.post("/profile/provider", uploadSingle('profile', 'image'), uploadProviderProfileImage);

@@ -152,7 +152,7 @@ const UserProfile = () => {
             <div className="flex flex-col items-center md:items-start">
               <Avatar className="h-32 w-32 mb-4">
                 <img
-                  src={user.profileImageUrl || (user.profileImage 
+                  src={user.profileImageData || user.profileImageUrl || (user.profileImage 
                     ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000${user.profileImage}`)
                     : '/default-avatar.png'
                   )}

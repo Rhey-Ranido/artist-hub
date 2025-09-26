@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    profileImageData: {
+      type: String, // Base64 encoded image data
+      required: false,
+    },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     artworksCount: { type: Number, default: 0 },

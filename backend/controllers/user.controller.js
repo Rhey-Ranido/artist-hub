@@ -37,27 +37,28 @@ export const getUserProfile = async (req, res) => {
       isPublic: true 
     });
 
-    // Construct full profile image URL with explicit port
+    // Construct full profile image URL with explicit port (for backward compatibility)
     const host = req.get('host') || 'localhost:5000';
-    const profileImageUrl = user.profileImage
+    const profileImageUrl = user.profileImageData || (user.profileImage
       ? `${req.protocol}://${host}/uploads/${user.profileImage}`
-      : null;
+      : null);
 
     // Construct profile image URLs for followers and following
-    const constructProfileImageUrl = (profileImage) => {
-      if (!profileImage) return null;
-      return profileImage.startsWith('http') ? profileImage : `${req.protocol}://${host}/uploads/${profileImage}`;
+    const constructProfileImageUrl = (user) => {
+      if (user.profileImageData) return user.profileImageData;
+      if (!user.profileImage) return null;
+      return user.profileImage.startsWith('http') ? user.profileImage : `${req.protocol}://${host}/uploads/${user.profileImage}`;
     };
 
     // Add profile image URLs to followers and following
     const followersWithUrls = user.followers?.map(follower => ({
       ...follower.toObject(),
-      profileImageUrl: constructProfileImageUrl(follower.profileImage)
+      profileImageUrl: constructProfileImageUrl(follower)
     })) || [];
 
     const followingWithUrls = user.following?.map(following => ({
       ...following.toObject(),
-      profileImageUrl: constructProfileImageUrl(following.profileImage)
+      profileImageUrl: constructProfileImageUrl(following)
     })) || [];
 
     res.json({

@@ -67,24 +67,7 @@ mongoose
   .then(() => {
     console.log("✅ Connected to MongoDB");
 
-    // Start HTTP server
-    server.listen(process.env.PORT, () => {
-      console.log(`🚀 Server running on port ${process.env.PORT}`);
-      console.log(
-        `📁 Static files served from: ${path.join(process.cwd(), "uploads")}`
-      );
-    });
-
-    // Initialize Socket.IO
-    const io = initSocket(server);
-
-    // Attach socket.io to request object BEFORE routes
-    app.use((req, res, next) => {
-      req.io = io;
-      next();
-    });
-
-    // routes
+    // Initialize routes (always mount routes)
     app.use("/api/auth", authRoutes);
     app.use("/api/protected", protectedRoutes);
     app.use("/api/artworks", artworkRoutes);
@@ -97,6 +80,25 @@ mongoose
     app.use("/api/tutorials", tutorialRoutes);
     app.use("/api/notifications", notificationRoutes);
     app.use("/api/stats", statsRoutes);
+
+    // Only start HTTP server in non-Vercel environments
+    if (!process.env.VERCEL) {
+      server.listen(process.env.PORT || 3000, () => {
+        console.log(`🚀 Server running on port ${process.env.PORT || 3000}`);
+        console.log(
+          `📁 Static files served from: ${path.join(process.cwd(), "uploads")}`
+        );
+      });
+
+      // Initialize Socket.IO only when running a long-lived server
+      const io = initSocket(server);
+
+      // Attach socket.io to request object BEFORE routes
+      app.use((req, res, next) => {
+        req.io = io;
+        next();
+      });
+    }
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);

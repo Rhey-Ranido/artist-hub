@@ -8,6 +8,7 @@ import ArtworkFeed from '../components/ArtworkFeed';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Palette, Brush, Users, Heart, Sparkles, Plus, Loader2 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   useEffect(() => {
     fetchArtworkFeed();

@@ -36,6 +36,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5000",
       "http://127.0.0.1:5173",
+      process.env.FRONTEND_URL || "https://your-frontend-domain.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

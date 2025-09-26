@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload, User, Loader2, Camera, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '@/config/api';
 
 const ProfileImageUpload = ({ 
   type = 'user', // 'user' or 'provider'
@@ -22,7 +23,7 @@ const ProfileImageUpload = ({
     return localStorage.getItem('token');
   };
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   useEffect(() => {
     setPreviewUrl(currentImageUrl);
@@ -128,7 +129,7 @@ const ProfileImageUpload = ({
           : data.user?.profileImage || data.profileImage;
         
         if (profileImage) {
-          const fallbackUrl = `http://localhost:5000${profileImage}`;
+          const fallbackUrl = `${window.location.origin}${profileImage.startsWith('/') ? '' : '/'}${profileImage}`;
           setPreviewUrl(fallbackUrl);
           // Update user data in AuthContext
           if (type === 'user') {

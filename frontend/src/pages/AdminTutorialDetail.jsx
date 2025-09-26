@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Clock, User, Calendar, ArrowLeft } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Using centralized API base URL
 
 const AdminTutorialDetail = () => {
   const { id } = useParams();
@@ -87,7 +88,7 @@ const AdminTutorialDetail = () => {
               </div>
               {tutorial.thumbnail && (
                 <img
-                  src={`http://localhost:5000${tutorial.thumbnail}`}
+                  src={`${window.location.origin}${tutorial.thumbnail}`}
                   alt={tutorial.title}
                   className="w-28 h-28 rounded-lg object-cover"
                 />
@@ -131,7 +132,7 @@ const AdminTutorialDetail = () => {
                         </h3>
                         {step.imageUrl && (
                           <img
-                            src={`http://localhost:5000${step.imageUrl}`}
+                            src={`${window.location.origin}${step.imageUrl}`}
                             alt={`Step ${step.order || idx + 1}`}
                             className="w-full max-w-3xl rounded-lg mb-4"
                           />

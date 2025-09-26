@@ -16,6 +16,7 @@ import {
   Users,
   X
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const Services = () => {
   const navigate = useNavigate();
@@ -30,8 +31,7 @@ const Services = () => {
   const [locationPermission, setLocationPermission] = useState('unknown');
   const servicesPerPage = 12;
 
-  // API Configuration
-  const API_BASE_URL = 'http://localhost:3000/api';
+  // Using centralized API base URL
 
   // ServiceSearch handlers
   const handleSearchResults = (results) => {

@@ -24,6 +24,7 @@ import {
   Trash2,
   Edit
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const AdminProviderDetail = () => {
   const { id } = useParams();
@@ -39,7 +40,7 @@ const AdminProviderDetail = () => {
   const [adminFeedback, setAdminFeedback] = useState('');
   const [actionType, setActionType] = useState('');
 
-  const API_BASE_URL = 'http://localhost:3000/api';
+  // Using centralized API base URL
 
   useEffect(() => {
     // Check if user is admin

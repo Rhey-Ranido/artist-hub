@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { API_BASE_URL, SOCKET_URL } from '@/config/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,7 +70,7 @@ const Messages = () => {
     console.log('📊 Latest message:', messages[messages.length - 1]?.content);
   }, [messages, forceUpdate]);
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   // Parse URL parameters
   const urlParams = new URLSearchParams(location.search);
@@ -92,7 +93,7 @@ const Messages = () => {
     setCurrentUser(user);
     
     // Initialize socket connection
-    const socketInstance = io('http://localhost:5000');
+    const socketInstance = io(SOCKET_URL);
     setSocket(socketInstance);
     
     socketInstance.emit('setup', user);

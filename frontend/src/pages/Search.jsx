@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '@/config/api';
 
 const Search = () => {
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [users, setUsers] = useState([]);
@@ -44,7 +45,7 @@ const Search = () => {
     try {
       setUsersLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/users/search?query=${encodeURIComponent(searchQuery)}&limit=20`
+        `${API_BASE_URL}/users/search?query=${encodeURIComponent(searchQuery)}&limit=20`
       );
       const data = await response.json();
 
@@ -117,7 +118,7 @@ const Search = () => {
                           <Avatar className="h-16 w-16">
                                                          {user?.profileImageData || user?.profileImage ? (
                                <img
-                                 src={user?.profileImageData || `http://localhost:5000/uploads/profiles/${user.profileImage}`}
+                                 src={user?.profileImageData || `${window.location.origin}/uploads/profiles/${user.profileImage}`}
                                  alt={user.username}
                                  className="w-full h-full object-cover"
                                />

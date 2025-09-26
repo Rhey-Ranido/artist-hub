@@ -47,6 +47,7 @@ import {
   Twitter,
   Github
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const ServiceDetails = () => {
   const { id } = useParams();
@@ -57,7 +58,7 @@ const ServiceDetails = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:3000/api';
+  // Using centralized API base URL
 
   useEffect(() => {
     fetchServiceDetails();

@@ -3,6 +3,9 @@
  * Helper functions for handling standardized API responses on the client side
  */
 
+// Import API configuration
+import { API_ENDPOINTS } from '../config/api.js';
+
 // API Response Handler Class
 export class ApiResponse {
   constructor(response, data) {
@@ -145,7 +148,7 @@ export const authApi = {
    * Login user
    */
   login: async (email, password) => {
-    return apiRequest('http://localhost:5000/api/auth/login', {
+    return apiRequest(API_ENDPOINTS.AUTH.LOGIN, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -155,7 +158,7 @@ export const authApi = {
    * Register user
    */
   register: async (userData) => {
-    return apiRequest('http://localhost:5000/api/auth/register', {
+    return apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -165,7 +168,7 @@ export const authApi = {
    * Get current user profile
    */
   getMe: async (token) => {
-    return apiRequest('http://localhost:5000/api/auth/me', {
+    return apiRequest(API_ENDPOINTS.AUTH.ME, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,

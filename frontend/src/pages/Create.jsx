@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, BookOpen, Check, Loader2, AlertTriangle } from 'lucide-react';
 import LevelUpModal from '../components/LevelUpModal';
+import { API_BASE_URL } from '@/config/api';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Create = () => {
   const tutorialTitle = tutorialData?.tutorialTitle;
   const tutorialId = tutorialData?.tutorialId;
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   // Handle browser/tab close
   useBeforeUnload(
@@ -86,7 +87,7 @@ const Create = () => {
         formData.append('image', imageBlob, 'artwork.png');
       }
 
-      let response = await fetch('http://localhost:5000/api/artworks', {
+      let response = await fetch(`${API_BASE_URL}/artworks`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -97,7 +98,7 @@ const Create = () => {
       // If the main endpoint fails, try the simple fallback
       if (!response.ok) {
         console.log('Main artwork creation failed, trying fallback endpoint...');
-        response = await fetch('http://localhost:5000/api/artworks/simple', {
+        response = await fetch(`${API_BASE_URL}/artworks/simple`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -244,7 +245,7 @@ const Create = () => {
                     {sortedSteps[currentStepIndex]?.imageUrl && (
                       <div className="mt-4">
                         <img
-                          src={`http://localhost:5000${sortedSteps[currentStepIndex].imageUrl}`}
+                          src={`${window.location.origin}${sortedSteps[currentStepIndex].imageUrl}`}
                           alt={`Step ${sortedSteps[currentStepIndex]?.order || currentStepIndex + 1}`}
                           className="w-full rounded-lg shadow-md"
                         />

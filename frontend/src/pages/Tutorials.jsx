@@ -13,8 +13,9 @@ import {
   Search
 } from 'lucide-react';
 import TutorialCategories from '@/components/TutorialCategories';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Using centralized API base URL
 
 const Tutorials = () => {
   const [searchParams, setSearchParams] = useSearchParams();

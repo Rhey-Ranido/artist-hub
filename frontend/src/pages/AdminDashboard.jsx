@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import TutorialCard from '../components/TutorialCard';
+import { API_BASE_URL } from '@/config/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,7 +85,7 @@ const AdminDashboard = () => {
     steps: []
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   // Check if user is admin and redirect if not
   useEffect(() => {
@@ -1086,7 +1087,7 @@ const AdminDashboard = () => {
                     {tutorialForm.thumbnail ? (
                       <div className="relative">
                         <img 
-                          src={tutorialForm.thumbnail.startsWith('http') ? tutorialForm.thumbnail : `http://localhost:5000${tutorialForm.thumbnail}`}
+                          src={tutorialForm.thumbnail.startsWith('http') ? tutorialForm.thumbnail : `${window.location.origin}${tutorialForm.thumbnail}`}
                           alt="Tutorial thumbnail"
                           className="w-full max-w-xs h-32 object-cover rounded-lg"
                         />

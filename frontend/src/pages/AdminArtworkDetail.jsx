@@ -20,6 +20,7 @@ import {
   Loader2,
   Trash2
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const AdminArtworkDetail = () => {
   const { id } = useParams();
@@ -37,7 +38,7 @@ const AdminArtworkDetail = () => {
            adminNote: ''
          });
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   // Check if user is admin and redirect if not
   useEffect(() => {
@@ -323,7 +324,7 @@ const AdminArtworkDetail = () => {
             <CardContent>
               <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                 <img
-                  src={artwork.imageData || `http://localhost:5000${artwork.imageUrl}`}
+                  src={artwork.imageData || `${window.location.origin}${artwork.imageUrl}`}
                   alt={artwork.title}
                   className="w-full h-full object-cover"
                 />
@@ -411,7 +412,7 @@ const AdminArtworkDetail = () => {
                   <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
                     {artwork.artist?.profileImage ? (
                       <img
-                        src={`http://localhost:5000${artwork.artist.profileImage}`}
+                        src={`${window.location.origin}${artwork.artist.profileImage}`}
                         alt={artwork.artist.username}
                         className="w-full h-full object-cover"
                       />

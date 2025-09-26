@@ -8,8 +8,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Clock, Calendar, ArrowLeft, Heart, Tag, BookOpen, Palette, Share2, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LevelUpModal from '../components/LevelUpModal';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Using centralized API base URL
 
 const TutorialDetail = () => {
   const { id } = useParams();
@@ -303,7 +304,7 @@ const TutorialDetail = () => {
               {tutorial.thumbnail && (
                 <div className="ml-6">
                   <img
-                    src={`http://localhost:5000${tutorial.thumbnail}`}
+                    src={`${window.location.origin}${tutorial.thumbnail}`}
                     alt={tutorial.title}
                     className="w-48 h-48 rounded-lg object-cover shadow-lg"
                   />
@@ -351,7 +352,7 @@ const TutorialDetail = () => {
                         {step.imageUrl && (
                           <div className="mb-4">
                             <img
-                              src={`http://localhost:5000${step.imageUrl}`}
+                              src={`${window.location.origin}${step.imageUrl}`}
                               alt={`Step ${step.order || idx + 1}`}
                               className="w-full max-w-2xl rounded-lg shadow-md"
                             />

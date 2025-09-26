@@ -26,6 +26,7 @@ import {
   Zap,
   Palette
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const UserSettings = () => {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ const UserSettings = () => {
     showFlow: false
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   // Get auth token
   const getAuthToken = () => {
@@ -105,7 +106,7 @@ const UserSettings = () => {
       // Ensure profileImageUrl is properly set
       const updatedUserData = {
         ...userData,
-        profileImageUrl: userData.profileImageUrl || (userData.profileImage ? `http://localhost:5000/uploads/${userData.profileImage}` : null)
+        profileImageUrl: userData.profileImageUrl || (userData.profileImage ? `${window.location.origin}/uploads/${userData.profileImage}` : null)
       };
       
       console.log('Updated User Data:', updatedUserData);

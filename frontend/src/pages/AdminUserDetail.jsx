@@ -28,6 +28,7 @@ import {
   MessageSquare,
   Star
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const AdminUserDetail = () => {
   const { id } = useParams();
@@ -46,7 +47,7 @@ const AdminUserDetail = () => {
     lastActive: null
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
 
   useEffect(() => {
     loadUserDetails();

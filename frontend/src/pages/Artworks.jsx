@@ -12,9 +12,10 @@ import {
   SortAsc,
   SortDesc
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 const Artworks = () => {
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // Using centralized API base URL
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -94,7 +94,7 @@ export default function ArtworkCard({
             <Avatar className="h-6 w-6">
               {artwork.artist?.profileImageData || artwork.artist?.profileImage ? (
                 <img
-                  src={artwork.artist?.profileImageData || `http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                  src={artwork.artist?.profileImageData || `${window.location.origin}/uploads/${artwork.artist.profileImage}`}
                   alt={artwork.artist.username}
                   className="w-full h-full object-cover"
                   onError={(e) => {

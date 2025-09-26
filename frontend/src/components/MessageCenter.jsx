@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { API_BASE_URL, SOCKET_URL } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +73,7 @@ const MessageCenter = () => {
     scrollToBottom();
   }, [typing]);
 
-  const API_BASE_URL = 'http://localhost:3000/api';
+  // API_BASE_URL is now imported from config
 
   useEffect(() => {
     // Get current user info and token
@@ -91,7 +92,7 @@ const MessageCenter = () => {
         setCurrentUser(user);
         
         // Initialize socket connection with error handling and reconnection
-        const socketInstance = io('http://localhost:3000', {
+        const socketInstance = io(SOCKET_URL, {
           reconnection: true,
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,

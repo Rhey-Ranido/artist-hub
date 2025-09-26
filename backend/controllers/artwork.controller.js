@@ -330,13 +330,19 @@ export const getArtworkFeed = async (req, res) => {
 
     console.log('Found artworks:', artworks.length);
 
-    // Construct full URLs for artwork images
+    // Construct full URLs for artwork images and include base64 data
     const host = req.get('host') || 'localhost:5000';
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
-      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      imageUrl: artwork.imageData || (artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null),
       // canvasData is already a base64 data URL, don't modify it
-      canvasData: artwork.canvasData || null
+      canvasData: artwork.canvasData || null,
+      artist: artwork.artist ? {
+        ...artwork.artist,
+        profileImageUrl: artwork.artist.profileImageData || (artwork.artist.profileImage 
+          ? `${req.protocol}://${host}/uploads/${artwork.artist.profileImage}`
+          : null)
+      } : null
     }));
 
     const total = await Artwork.countDocuments({ isPublic: true });
@@ -368,7 +374,7 @@ export const getArtworkById = async (req, res) => {
     const userId = req.user?.id; // Get user ID if authenticated
     
     let artwork = await Artwork.findById(id)
-      .populate('artist', 'username profileImage bio');
+      .populate('artist', 'username profileImage profileImageData bio');
 
     if (!artwork) {
       return res.status(404).json({ 
@@ -394,8 +400,18 @@ export const getArtworkById = async (req, res) => {
       }
     }
 
-    // Convert to plain object for response
-    const artworkResponse = artwork.toObject();
+    // Convert to plain object for response and include image data
+    const host = req.get('host') || 'localhost:5000';
+    const artworkResponse = {
+      ...artwork.toObject(),
+      imageUrl: artwork.imageData || (artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null),
+      artist: artwork.artist ? {
+        ...artwork.artist,
+        profileImageUrl: artwork.artist.profileImageData || (artwork.artist.profileImage 
+          ? `${req.protocol}://${host}/uploads/${artwork.artist.profileImage}`
+          : null)
+      } : null
+    };
 
     res.json({
       success: true,
@@ -445,19 +461,25 @@ export const getUserArtworks = async (req, res) => {
     }
 
     const artworks = await Artwork.find(query)
-      .populate('artist', 'username profileImage firstName lastName')
+      .populate('artist', 'username profileImage profileImageData firstName lastName')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    // Construct full URLs for artwork images
+    // Construct full URLs for artwork images and include base64 data
     const host = req.get('host') || 'localhost:5000';
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
-      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      imageUrl: artwork.imageData || (artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null),
       // canvasData is already a base64 data URL, don't modify it
-      canvasData: artwork.canvasData || null
+      canvasData: artwork.canvasData || null,
+      artist: artwork.artist ? {
+        ...artwork.artist,
+        profileImageUrl: artwork.artist.profileImageData || (artwork.artist.profileImage 
+          ? `${req.protocol}://${host}/uploads/${artwork.artist.profileImage}`
+          : null)
+      } : null
     }));
 
     const total = await Artwork.countDocuments(query);
@@ -669,19 +691,25 @@ export const searchArtworks = async (req, res) => {
     sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
 
     const artworks = await Artwork.find(searchQuery)
-      .populate('artist', 'username profileImage firstName lastName')
+      .populate('artist', 'username profileImage profileImageData firstName lastName')
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
       .lean();
 
-    // Construct full URLs for artwork images
+    // Construct full URLs for artwork images and include base64 data
     const host = req.get('host') || 'localhost:5000';
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
-      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      imageUrl: artwork.imageData || (artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null),
       // canvasData is already a base64 data URL, don't modify it
-      canvasData: artwork.canvasData || null
+      canvasData: artwork.canvasData || null,
+      artist: artwork.artist ? {
+        ...artwork.artist,
+        profileImageUrl: artwork.artist.profileImageData || (artwork.artist.profileImage 
+          ? `${req.protocol}://${host}/uploads/${artwork.artist.profileImage}`
+          : null)
+      } : null
     }));
 
     const total = await Artwork.countDocuments(searchQuery);
@@ -763,7 +791,7 @@ export const getSavedArtworks = async (req, res) => {
       path: 'savedArtworks',
       populate: {
         path: 'artist',
-        select: 'username profileImage firstName lastName'
+        select: 'username profileImage profileImageData firstName lastName'
       }
     });
 
@@ -778,12 +806,18 @@ export const getSavedArtworks = async (req, res) => {
     const savedArtworks = user.savedArtworks.slice(skip, skip + limit);
     const total = user.savedArtworks.length;
 
-    // Construct full URLs for artwork images
+    // Construct full URLs for artwork images and include base64 data
     const host = req.get('host') || 'localhost:5000';
     const artworksWithUrls = savedArtworks.map(artwork => ({
       ...artwork.toObject(),
-      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
-      canvasData: artwork.canvasData ? `${req.protocol}://${host}${artwork.canvasData}` : null
+      imageUrl: artwork.imageData || (artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null),
+      canvasData: artwork.canvasData || null,
+      artist: artwork.artist ? {
+        ...artwork.artist,
+        profileImageUrl: artwork.artist.profileImageData || (artwork.artist.profileImage 
+          ? `${req.protocol}://${host}/uploads/${artwork.artist.profileImage}`
+          : null)
+      } : null
     }));
 
     res.json({
@@ -823,19 +857,25 @@ export const getPostedArtworks = async (req, res) => {
     }
 
     const artworks = await Artwork.find(query)
-      .populate('artist', 'username profileImage firstName lastName')
+      .populate('artist', 'username profileImage profileImageData firstName lastName')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    // Construct full URLs for artwork images
+    // Construct full URLs for artwork images and include base64 data
     const host = req.get('host') || 'localhost:5000';
     const artworksWithUrls = artworks.map(artwork => ({
       ...artwork,
-      imageUrl: artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null,
+      imageUrl: artwork.imageData || (artwork.imageUrl ? `${req.protocol}://${host}${artwork.imageUrl}` : null),
       // canvasData is already a base64 data URL, don't modify it
-      canvasData: artwork.canvasData || null
+      canvasData: artwork.canvasData || null,
+      artist: artwork.artist ? {
+        ...artwork.artist,
+        profileImageUrl: artwork.artist.profileImageData || (artwork.artist.profileImage 
+          ? `${req.protocol}://${host}/uploads/${artwork.artist.profileImage}`
+          : null)
+      } : null
     }));
 
     const total = await Artwork.countDocuments(query);

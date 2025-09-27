@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import DarkModeToggle from './DarkModeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, User, LogOut, Settings, Home, ChevronDown, Palette, Shield, Search, Plus, MessageCircle, BookOpen, GraduationCap, Bell } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -55,7 +56,7 @@ const Navbar = () => {
 
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/notifications/unread-count', {
+        const response = await fetch(`${API_BASE_URL}/notifications/unread-count`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { API_BASE_URL } from '../config/api';
 import { 
   Heart, 
   MessageCircle, 
@@ -72,7 +73,7 @@ const ArtworkDetails = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`http://localhost:5000/api/artworks/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/artworks/${id}`, {
         headers
       });
       const data = await response.json();
@@ -92,7 +93,7 @@ const ArtworkDetails = () => {
   const fetchComments = async () => {
     try {
       setCommentsLoading(true);
-      const response = await fetch(`http://localhost:5000/api/comments/artwork/${id}`);
+      const response = await fetch(`${API_BASE_URL}/comments/artwork/${id}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -138,7 +139,7 @@ const ArtworkDetails = () => {
       setCommentLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:5000/api/comments', {
+      const response = await fetch(`${API_BASE_URL}/comments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -176,7 +177,7 @@ const ArtworkDetails = () => {
     try {
       setSaveLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/artworks/${id}/save`, {
+      const response = await fetch(`${API_BASE_URL}/artworks/${id}/save`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -199,7 +200,7 @@ const ArtworkDetails = () => {
   const handleDownload = () => {
     if (artwork?.imageUrl) {
       const link = document.createElement('a');
-      link.href = `http://localhost:5000${artwork.imageUrl}`;
+      link.href = `${API_BASE_URL.replace('/api', '')}${artwork.imageUrl}`;
       link.download = `${artwork.title}.png`;
       link.click();
     }
@@ -256,7 +257,7 @@ const ArtworkDetails = () => {
               <CardContent className="p-0">
                 <div className="relative">
                   <img
-                    src={artwork.imageData || `http://localhost:5000${artwork.imageUrl}`}
+                    src={artwork.imageData || `${API_BASE_URL.replace('/api', '')}${artwork.imageUrl}`}
                     alt={artwork.title}
                     className="w-full h-auto rounded-t-lg"
                   />
@@ -355,7 +356,7 @@ const ArtworkDetails = () => {
                   <Avatar className="h-12 w-12">
                     {artwork.artist.profileImageData || artwork.artist.profileImage ? (
                       <img
-                        src={artwork.artist.profileImageData || `http://localhost:5000/uploads/${artwork.artist.profileImage}`}
+                        src={artwork.artist.profileImageData || `${API_BASE_URL.replace('/api', '')}/uploads/${artwork.artist.profileImage}`}
                         alt={artwork.artist.username}
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -442,7 +443,7 @@ const ArtworkDetails = () => {
                           <Avatar className="h-8 w-8">
                             <img
                               src={comment.author.profileImage 
-                                ? `http://localhost:5000/uploads/${comment.author.profileImage}` 
+                                ? `${API_BASE_URL.replace('/api', '')}/uploads/${comment.author.profileImage}` 
                                 : '/default-avatar.png'
                               }
                               alt={comment.author.username}

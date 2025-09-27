@@ -36,8 +36,9 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5000",
       "http://127.0.0.1:5173",
+      "https://artist-hub-1.vercel.app",
       // Add your Render frontend URL here after deployment
-      "https://artist-hub-1.vercel.app/"
+      process.env.FRONTEND_URL || "https://artist-hub-1.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

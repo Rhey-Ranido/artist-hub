@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const SignupForm = ({ onSignupSuccess }) => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -347,9 +349,13 @@ const SignupForm = ({ onSignupSuccess }) => {
 
         <div className="mt-4 text-center text-sm">
           Already have an account?{' '}
-          <a href="/login" className="text-primary hover:underline">
+          <button 
+            type="button"
+            onClick={() => navigate('/login')} 
+            className="text-primary hover:underline bg-transparent border-none cursor-pointer"
+          >
             Sign in
-          </a>
+          </button>
         </div>
       </CardContent>
     </Card>

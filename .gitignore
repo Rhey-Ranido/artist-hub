@@ -3,3 +3,5 @@ backend/node_modules
 backend/.env
 todo.md
 data.md
+DEPLOYMENT_GUIDE.md
+RENDER_DEPLOYMENT_GUIDE.md

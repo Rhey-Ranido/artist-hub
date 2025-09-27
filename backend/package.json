@@ -4,6 +4,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
+    "start": "node server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "dev": "npx nodemon server.js",
     "seed": "node scripts/seedData.js",

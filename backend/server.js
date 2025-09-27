@@ -36,7 +36,8 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5000",
       "http://127.0.0.1:5173",
-      "https://artist-hub-1.vercel.app",
+      // Add your Render frontend URL here after deployment
+      process.env.FRONTEND_URL || "https://artist-hub-1.vercel.app/"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -67,7 +68,33 @@ mongoose
   .then(() => {
     console.log("✅ Connected to MongoDB");
 
-    // Initialize routes (always mount routes)
+    // Start HTTP server
+    server.listen(process.env.PORT, () => {
+      console.log(`🚀 Server running on port ${process.env.PORT}`);
+      console.log(
+        `📁 Static files served from: ${path.join(process.cwd(), "uploads")}`
+      );
+    });
+
+    // Initialize Socket.IO
+    const io = initSocket(server);
+
+    // Attach socket.io to request object BEFORE routes
+    app.use((req, res, next) => {
+      req.io = io;
+      next();
+    });
+
+    // Health check endpoint for Render
+    app.get("/api/health", (req, res) => {
+      res.status(200).json({ 
+        status: "OK", 
+        message: "Server is running",
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // routes
     app.use("/api/auth", authRoutes);
     app.use("/api/protected", protectedRoutes);
     app.use("/api/artworks", artworkRoutes);
@@ -80,25 +107,6 @@ mongoose
     app.use("/api/tutorials", tutorialRoutes);
     app.use("/api/notifications", notificationRoutes);
     app.use("/api/stats", statsRoutes);
-
-    // Only start HTTP server in non-Vercel environments
-    if (!process.env.VERCEL) {
-      server.listen(process.env.PORT || 3000, () => {
-        console.log(`🚀 Server running on port ${process.env.PORT || 3000}`);
-        console.log(
-          `📁 Static files served from: ${path.join(process.cwd(), "uploads")}`
-        );
-      });
-
-      // Initialize Socket.IO only when running a long-lived server
-      const io = initSocket(server);
-
-      // Attach socket.io to request object BEFORE routes
-      app.use((req, res, next) => {
-        req.io = io;
-        next();
-      });
-    }
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);

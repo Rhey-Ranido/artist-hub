@@ -11,7 +11,7 @@ const getApiBaseUrl = () => {
   }
   
   // In development, use localhost
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  return import.meta.env.VITE_API_BASE_URL || 'https://artist-hub-zjy4.onrender.com/api';
 };
 
 // Get Socket.IO server URL

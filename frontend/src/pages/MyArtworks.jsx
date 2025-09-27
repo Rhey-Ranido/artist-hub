@@ -7,6 +7,7 @@ import { Heart, Bookmark, Eye, MessageCircle, Trash2, Edit, Share } from 'lucide
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { API_BASE_URL } from '../config/api';
 
 const MyArtworks = () => {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ const MyArtworks = () => {
 
       if (activeTab === 'posted') {
         // Get only public artworks for posted tab
-        const response = await fetch('http://localhost:5000/api/artworks/posted/me?isPublic=true', {
+        const response = await fetch(`${API_BASE_URL}/artworks/posted/me?isPublic=true`, {
           headers
         });
         const data = await response.json();
@@ -50,8 +51,8 @@ const MyArtworks = () => {
       } else {
         // Get saved artworks + private artworks for saved tab
         const [savedResponse, privateResponse] = await Promise.all([
-          fetch('http://localhost:5000/api/artworks/saved/me', { headers }),
-          fetch('http://localhost:5000/api/artworks/posted/me?isPublic=false', { headers })
+          fetch(`${API_BASE_URL}/artworks/saved/me`, { headers }),
+          fetch(`${API_BASE_URL}/artworks/posted/me?isPublic=false`, { headers })
         ]);
         
         const savedData = await savedResponse.json();
@@ -79,7 +80,7 @@ const MyArtworks = () => {
   const handleTogglePublic = async (artworkId, currentPublicStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/artworks/${artworkId}`, {
+      const response = await fetch(`${API_BASE_URL}/artworks/${artworkId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -106,7 +107,7 @@ const MyArtworks = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/artworks/${artworkId}`, {
+      const response = await fetch(`${API_BASE_URL}/artworks/${artworkId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

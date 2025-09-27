@@ -17,6 +17,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 const Notifications = () => {
   const { user } = useAuth();
@@ -39,7 +40,7 @@ const Notifications = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const response = await fetch(`${API_BASE_URL}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -53,7 +54,7 @@ const Notifications = () => {
       } else {
         setError(data.message || 'Failed to fetch notifications');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to fetch notifications');
     } finally {
       setLoading(false);
@@ -63,7 +64,7 @@ const Notifications = () => {
   const markNotificationAsRead = async (notificationId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -89,7 +90,7 @@ const Notifications = () => {
     try {
       setMarkingAsRead(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/notifications/mark-all-read', {
+      const response = await fetch(`${API_BASE_URL}/notifications/mark-all-read`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -267,7 +268,7 @@ const Notifications = () => {
                         
                         {notification.artwork?.imageUrl && (
                           <img 
-                            src={`http://localhost:5000${notification.artwork.imageUrl}`}
+                            src={`${API_BASE_URL.replace('/api', '')}${notification.artwork.imageUrl}`}
                             alt={notification.artwork.title}
                             className="w-12 h-12 rounded object-cover"
                           />

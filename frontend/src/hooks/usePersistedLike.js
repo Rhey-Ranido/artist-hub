@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getLikedArtworks, setLikedArtworks } from '../utils/likeStorage';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Custom hook for managing artwork like state with localStorage persistence
@@ -180,7 +181,7 @@ export const usePersistedLike = (artworkId, initialLikesCount = 0, initialIsLike
       setPersistedLikeState(newIsLiked, newLikesCount);
 
       // Make API call
-      const response = await fetch(`http://localhost:5000/api/artworks/${artworkId}/like`, {
+      const response = await fetch(`${API_BASE_URL}/artworks/${artworkId}/like`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
